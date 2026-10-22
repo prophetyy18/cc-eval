@@ -6,3 +6,4 @@ description: 'Cases for the cc-workflow `intent` skill: how a raw user request i
   '
 cases:
 - INT-S001
+- INT-S002

@@ -37,6 +37,9 @@ class Scorer(BaseModel):
     min_count: int = 1
     max_count: int | None = None
     field: str | None = None
+    #: A key of the case's oracle (``oracle.expected_output``) that carries the
+    #: expected value.  It lets every case declare its own expectation.
+    case_field: str = ""
 
 
 class Criterion(BaseModel):
@@ -106,7 +109,7 @@ class RubricEvaluator:
         notes: list[str] = []
 
         for criterion in self.rubric.criteria:
-            outcome = _score_criterion(criterion, text, document)
+            outcome = _score_criterion(criterion, text, document, case)
             if outcome is None:
                 unscored.append(criterion.id)
                 continue
@@ -158,7 +161,9 @@ class RubricEvaluator:
         )
 
 
-def _score_criterion(criterion: Criterion, text: str, document: Any) -> float | None:
+def _score_criterion(
+    criterion: Criterion, text: str, document: Any, case: BenchmarkCase
+) -> float | None:
     """Return 0.0/1.0 for a criterion, or ``None`` when it cannot be scored
     deterministically."""
     scorer = criterion.scorer
@@ -197,6 +202,19 @@ def _score_criterion(criterion: Criterion, text: str, document: Any) -> float | 
             return None
         found = len(re.findall(scorer.pattern, text, re.IGNORECASE))
         return 1.0 if found >= scorer.min_count else 0.0
+
+    if kind == "count_equals_case_field":
+        if not scorer.pattern or not scorer.case_field:
+            return None
+        expected = case.oracle.expected_output.get(scorer.case_field)
+        if expected is None:
+            return None
+        try:
+            wanted = int(expected)
+        except (TypeError, ValueError):
+            return None
+        found = len(re.findall(scorer.pattern, text, re.IGNORECASE))
+        return 1.0 if found == wanted else 0.0
 
     if kind == "count_max":
         if not scorer.pattern or scorer.max_count is None:

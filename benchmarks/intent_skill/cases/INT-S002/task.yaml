@@ -1,0 +1,31 @@
+case_id: INT-S002
+task_type: intent_capture
+title: PHA 现货/期货价差套利置换
+tags:
+- binance
+- pha
+- 套利
+- 现货期货
+prompt: "You are working in a repository that contains the `intent` skill.\n\nA user\
+  \ has sent the raw request below.  It is saved at\n`task/input/request.md` - read\
+  \ it before you answer.\n\nUse the `intent` skill from this repository to capture\
+  \ it: decide whether\nthe request is one intent or several, and write the intent\
+  \ document(s)\nunder `docs/intents/`.\n\nRules:\n- There is no human to answer questions.\
+  \  Wherever the skill would normally\n  clarify something with the user, state the\
+  \ assumption inline and mark it\n  \"(assumed)\".\n- Follow the INTENT.md template\
+  \ of the skill exactly.\n- Do not start a Spec, an Architecture or an implementation.\n\
+  - Do not commit anything.\n"
+allowed_tools:
+- Read
+- Edit
+- Write
+- Glob
+- Grep
+- Bash(date:*)
+- Bash(mkdir:*)
+- Bash(git:*)
+- WebFetch
+- WebSearch
+output_paths:
+- docs/intents
+output_glob: docs/intents/*/INTENT.md

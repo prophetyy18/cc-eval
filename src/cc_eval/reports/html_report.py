@@ -271,6 +271,14 @@ def build_context(report: ReportModel) -> dict[str, Any]:
         view = case.model_dump(mode="json")
         view["index"] = index
         view["delta_svg"] = delta_bar(case.delta, max_abs, case.status)
+        for run in view["runs"]:
+            # A denied tool call is the difference between "the agent decided
+            # not to write" and "the agent was not allowed to write".
+            denials: list[Any] = []
+            for event in run.get("trace_events") or []:
+                details = event.get("details") or {}
+                denials.extend(details.get("permission_denials") or [])
+            run["permission_denials"] = denials
         case_views.append(view)
 
     return {

@@ -877,6 +877,15 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             {% if run.missing_fields %}
             <div class="missing-box">This runtime did not provide: {{ run.missing_fields|join(', ') }}. Those values are shown as n/a, never as zero.</div>
             {% endif %}
+            {% set denials = run.permission_denials or [] %}
+            {% if denials %}
+            <div class="error-box">
+              <strong>The runtime denied {{ denials|length }} tool call(s).</strong>
+              The agent was not allowed to perform them - that is not the same as the agent
+              choosing not to, and it can explain a missing output.
+              <pre>{{ denials|json_compact }}</pre>
+            </div>
+            {% endif %}
             {% if run.error %}
             <div class="error-box">{{ run.error }}</div>
             {% endif %}

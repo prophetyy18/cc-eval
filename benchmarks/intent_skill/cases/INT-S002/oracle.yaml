@@ -1,0 +1,52 @@
+# Ground truth for INT-S002.  This file is NEVER materialised into an agent
+# workspace.
+#
+# The judgement encoded here was made BEFORE the run.
+#
+# The request mentions two directions ("spot to futures" and "futures to
+# spot"), but those are not two user goals: they are the two mutually
+# exclusive paths of ONE arbitrage.  Per the intent skill's own decomposition
+# rules, a sub-goal only becomes its own intent when it has an *independent
+# outcome* the owner can prioritise, revise, accept or defer on its own.
+# "Convert the other way round" has no outcome of its own - it is the same
+# arbitrage.
+#
+# The price spread, the trading fees and the funding rate are *means*, not
+# goals.  A capability or a mechanism never becomes an intent of its own.
+#
+# So: ONE intent, with the hard constraint "the PHA quantity stays the same"
+# and the success criterion "the net result is positive after fees".
+expected_output:
+  # The number of intent documents this request should produce.
+  expected_intent_count: 1
+expected_entities:
+  - id: INT-A
+    category: intent
+    severity: medium
+    description: >
+      On Binance, convert between PHA spot and PHA futures without changing
+      the amount of PHA held, and end up with a profit.  The two directions
+      are alternative paths of the same arbitrage, not two separate goals.
+    evidence: >
+      "在保证我持有的 PHA 数量不变的前提下，完成 PHA 从现货到期货、或者从期货到
+      现货的置换，并且能赚到钱。"
+    match_keywords:
+      - PHA
+      - 现货
+      - 期货
+      - 置换
+      - 套利
+      - 数量不变
+      - 价差
+      - 赚
+      - 盈利
+      - 收益
+notes: >
+  The hard part of this request is not the decomposition - it is what a good
+  clarification has to dig out.  A useful intent document has to surface at
+  least: that Binance keeps spot and futures wallets apart (so USDT has to
+  be transferred between them, and transfers are limited), that "the PHA
+  quantity stays the same" needs to be pinned down (does it mean the total
+  holding, or the spot holding?), that the spread has to cover the trading
+  fees *and* the funding rate, and whether selling before buying is allowed
+  (which would leave the position naked for a moment).

@@ -228,6 +228,10 @@ def normalise_claude(
                         "is_error": is_error,
                         "num_turns": raw.get("num_turns"),
                         "total_cost_usd": raw.get("total_cost_usd"),
+                        # A denied tool call is the difference between "the
+                        # agent decided not to write" and "the agent was not
+                        # allowed to write".  It must be visible.
+                        "permission_denials": raw.get("permission_denials") or [],
                         "session_id": raw.get("session_id"),
                         "usage": usage,
                         "model_usage": model_usage,

@@ -1,0 +1,69 @@
+id: EXP-INTENT-002
+title: Observation run - how does the intent skill mine and clarify a real request?
+hypothesis: >
+  The intent skill turns the PHA spot/futures arbitrage request into ONE
+  intent (the two directions are paths of one arbitrage, not two goals), keeps
+  the hard constraint "the PHA quantity does not change" and surfaces the
+  unknowns that decide whether the trade is possible at all.
+independent_variable: >
+  None in this run - both sides are the same commit of cc-workflow.  The run
+  exists to OBSERVE what the intent skill produces and how stable that
+  output is; the difference between the two sides is the agent's own
+  run-to-run variation, which is worth seeing before any change is made.
+baseline:
+  name: baseline
+  framework:
+    type: git
+    repository: /home/lpdev/cc-workflow
+    ref: main
+  config: {}
+  expected_capabilities:
+    - intent
+candidate:
+  name: candidate
+  framework:
+    type: git
+    repository: /home/lpdev/cc-workflow
+    ref: main
+  config: {}
+  expected_capabilities:
+    - intent
+controls:
+  runtime: claude
+  model: null
+  benchmark: benchmarks/intent_skill
+  dataset_version: v1
+  evaluator: "rubric:intent-doc-v1"
+  repetitions: 1
+  max_budget_usd: 3.0
+  timeout_sec: 900
+  seed: 20240101
+  order: alternating
+  runner_args:
+    # The provider (base URL, token, model) lives in ~/.claude/settings.json,
+    # so the user settings have to be loaded for the run to reach a model.
+    setting_sources: "user,project"
+metrics:
+  - rubric_score
+expected_changes: []
+decision_rules:
+  primary_metric: rubric_score
+  direction: higher_is_better
+  min_delta: 0.05
+  min_repetitions: 1
+  case_delta_threshold: 0.0
+  max_regressed_cases: 0
+  require_confound_free: true
+  require_verified_capabilities:
+    - intent
+  confidence:
+    method: paired_bootstrap
+    alpha: 0.05
+    iterations: 2000
+    seed: 20240101
+notes: >
+  Both sides are the same commit on purpose: this is an observation run, not
+  an A/B.  The report will show the two INTENT.md documents side by side,
+  which shows how stable the skill's decomposition is when nothing changed.
+  The confound analysis will flag the identical frameworks - that is expected
+  and is not a defect of the run.

@@ -17,26 +17,29 @@ criteria:
       min_count: 1
 
   - id: DECOMPOSITION
-    name: The request was decomposed into exactly two intents
+    name: The request was decomposed into the expected number of intents
     weight: 3.0
     description: >
-      Pre-declared judgement (see benchmarks/intent_skill/cases/INT-S001/oracle.yaml):
-      the three statements describe two user problems, so exactly two intent
-      documents must exist.  One intent per input line is a failure; a single
-      merged intent that swallows the status problem is a failure too.
+      How many intents the request contains is a judgement a human made
+      *before* the run and wrote into the case's oracle
+      (expected_output.expected_intent_count).  One intent per input line is
+      a failure; a single merged intent that swallows a second user problem
+      is a failure too.
     scorer:
-      type: count_min
+      type: count_equals_case_field
       pattern: "(?m)^id:\\s*INT-\\d{3}"
-      min_count: 2
+      case_field: expected_intent_count
 
   - id: NOT_OVERFRAGMENTED
     name: The decomposition did not explode into one intent per statement
-    weight: 3.0
-    description: Three statements must not become three intents.
+    weight: 1.0
+    description: >
+      A coarse bound that applies to every case: a request never decomposes
+      into more than three intents.
     scorer:
       type: count_max
       pattern: "(?m)^id:\\s*INT-\\d{3}"
-      max_count: 2
+      max_count: 3
 
   - id: FRONTMATTER
     name: The frontmatter carries id, title and status

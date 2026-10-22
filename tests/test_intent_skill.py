@@ -76,7 +76,9 @@ def test_the_intent_rubric_is_loadable_and_scores_deterministically() -> None:
     )
     split_evaluation = evaluator.evaluate(case, split_result)
     assert split_evaluation.metrics["rubric_score"] < 1.0
-    assert split_evaluation.details["NOT_OVERFRAGMENTED"]["score"] == 0.0
+    # The count criterion is driven by the case's own pre-declared
+    # expectation (expected_intent_count), so three intents fail it.
+    assert split_evaluation.details["DECOMPOSITION"]["score"] == 0.0
 
     # A single merged intent swallows the status problem: the decomposition
     # criterion must fail.

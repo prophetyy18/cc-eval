@@ -13,6 +13,10 @@
 #
 # A skill that emits one intent per input line produces three intents and
 # loses the merge.
+expected_output:
+  # The number of intent documents this request should produce: three
+  # statements, but only two user problems.
+  expected_intent_count: 2
 expected_entities:
   - id: INT-A
     category: intent

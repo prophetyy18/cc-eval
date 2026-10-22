@@ -487,3 +487,60 @@ def test_registry_links_the_experiment_to_its_reports(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert "EXP-T001" in result.output
     assert "report.html" in result.output
+
+
+def test_permission_denials_are_visible_in_the_report(tmp_path: Path) -> None:
+    """A denied tool call must be visible: it is not the agent's choice."""
+    from cc_eval.core.models import RunResult, Trace, TraceEvent
+
+    baseline = write_framework(tmp_path / "fw" / "baseline", detectors=[("alpha", r"alpha")])
+    candidate = write_framework(tmp_path / "fw" / "candidate", detectors=[("alpha", r"alpha")])
+    benchmark = write_benchmark(
+        tmp_path / "bench",
+        known_defects=[
+            {"id": "D001", "category": "alpha", "description": "alpha", "match_keywords": ["alpha"]}
+        ],
+    )
+    spec_file = write_experiment(
+        tmp_path / "exp.yaml",
+        baseline_dir=baseline,
+        candidate_dir=candidate,
+        benchmark_dir=benchmark,
+        repetitions=1,
+        expected_changes=["skills/test_skill.py"],
+    )
+    records, _ = run_experiment(spec_file, tmp_path / "ws")
+
+    from cc_eval.comparison.compare import compare
+    from cc_eval.core.experiment import load_experiment
+
+    spec = load_experiment(spec_file)
+    comparison = compare(spec, records, dataset_version="v1", dataset_hash="abc", evaluator="det")
+
+    # Simulate a runtime that denied a tool call.
+    for record in records:
+        if record.result.trace is None:
+            record.result.trace = Trace(
+                run_id=record.result.run_id,
+                experiment_id=record.result.experiment_id,
+                case_id=record.result.case_id,
+                variant=record.result.variant,
+            )
+        record.result.trace.events.append(
+            TraceEvent(
+                seq=99,
+                type="result",
+                name="result",
+                status="error",
+                details={
+                    "permission_denials": [
+                        {"tool_name": "Bash", "tool_input": {"command": "mkdir -p docs/intents"}}
+                    ]
+                },
+            )
+        )
+
+    model = build_report_model(spec, comparison, records)
+    html = render_html(model)
+    assert "denied" in html
+    assert "mkdir -p docs/intents" in html
