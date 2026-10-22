@@ -105,7 +105,7 @@ def test_run_compare_report_roundtrip(tmp_path: Path) -> None:
         "report", "EXP-CLI", "--root", str(root), "--file", str(spec_file), "--format", "both"
     )
     assert report_result.exit_code == 0, report_result.output
-    assert "cc-eval report" in report_result.output
+    assert "cc-eval 报告" in report_result.output
     assert (root / "reports" / "EXP-T001.md").exists()
     assert (root / "reports" / "EXP-T001.json").exists()
 

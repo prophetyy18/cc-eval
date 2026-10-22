@@ -304,6 +304,13 @@ class Decision(StrictModel):
 
     verdict: Verdict = Verdict.PENDING
     reason: str = ""
+    #: A stable identifier for the reason (``reason.metric_missing`` ...) so
+    #: a report can render it in the reader's language.  ``reason`` stays the
+    #: canonical English text.
+    reason_code: str = ""
+    reason_params: dict[str, Any] = Field(default_factory=dict)
+    #: The stable identifiers of the notes, with their parameters.
+    notes_codes: list[dict[str, Any]] = Field(default_factory=list)
     primary_metric: str = ""
     baseline_value: float | None = None
     candidate_value: float | None = None
@@ -562,6 +569,8 @@ class CaseComparison(StrictModel):
     # not.  A case that only regresses on a guard metric must still be visible.
     regressed_metrics: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+    #: The stable identifiers of the notes, with their parameters.
+    note_codes: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class Confound(StrictModel):
@@ -581,6 +590,10 @@ class Confound(StrictModel):
     severity: Literal["blocker", "warning", "info"]
     detail: str
     where: str = ""
+    #: The stable identifier of the message (``confound.control_mismatch`` ...)
+    #: and the parameters it was built from, so a report can localise it.
+    code: str = ""
+    params: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def blocks_attribution(self) -> bool:

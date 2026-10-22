@@ -189,17 +189,29 @@ def compare(
                 regressed_metrics.append(metric)
 
         notes: list[str] = []
+        note_codes: list[dict[str, object]] = []
         if regressed_metrics:
+            metrics_sorted = ", ".join(sorted(regressed_metrics))
             notes.append(
-                "regressed on " + ", ".join(sorted(regressed_metrics)) + " while the primary metric held"
+                "regressed on " + metrics_sorted + " while the primary metric held"
+            )
+            note_codes.append(
+                {"code": "case.regressed_metric", "params": {"metrics": metrics_sorted}}
             )
         b_var = stdev([v for v in b_series if v is not None])
         c_var = stdev([v for v in c_series if v is not None])
         for label, variance in (("baseline", b_var), ("candidate", c_var)):
             if variance is not None and variance > 0.1:
                 notes.append(f"high {label} variance across repetitions ({variance:.3f})")
+                note_codes.append(
+                    {
+                        "code": "case.high_variance",
+                        "params": {"label": label, "variance": variance},
+                    }
+                )
         if b_value is not None and c_value is not None and abs(delta or 0.0) < 0.05:
             notes.append("the difference is within noise; manual review recommended")
+            note_codes.append({"code": "case.within_noise", "params": {}})
 
         report.cases.append(
             CaseComparison(
@@ -214,6 +226,7 @@ def compare(
                 candidate_variance=c_var,
                 regressed_metrics=sorted(regressed_metrics),
                 notes=notes,
+                note_codes=note_codes,
             )
         )
 
@@ -279,16 +292,24 @@ def _detect_control_confounds(spec: ExperimentSpec, records: list[RunRecord]) ->
         if not baseline_values or not candidate_values:
             continue
         if baseline_values != candidate_values:
+            baseline_sorted = sorted(baseline_values)
+            candidate_sorted = sorted(candidate_values)
             confounds.append(
                 Confound(
                     kind=kind,  # type: ignore[arg-type]
                     severity="blocker",
                     detail=(
                         f"{field} differs between the variants: "
-                        f"baseline={sorted(baseline_values)} candidate={sorted(candidate_values)}. "
+                        f"baseline={baseline_sorted} candidate={candidate_sorted}. "
                         "The measured difference cannot be attributed to the independent variable."
                     ),
                     where=field,
+                    code="confound.control_mismatch",
+                    params={
+                        "field": field,
+                        "baseline": baseline_sorted,
+                        "candidate": candidate_sorted,
+                    },
                 )
             )
     return confounds
@@ -313,6 +334,7 @@ def _detect_framework_confounds(
                         "configurations are equal: the independent variable is not present in "
                         "either side, so the experiment cannot measure anything"
                     ),
+                    code="confound.identical_frameworks",
                 )
             )
         return confounds
@@ -329,6 +351,8 @@ def _detect_framework_confounds(
                     "independent variable is the only difference"
                 ),
                 where=", ".join(changed[:10]),
+                code="confound.unexpected_diff",
+                params={"count": len(changed)},
             )
         )
         return confounds
@@ -347,6 +371,8 @@ def _detect_framework_confounds(
                     + ". These changes may explain the observed difference."
                 ),
                 where=", ".join(unexpected[:10]),
+                code="confound.unexpected_files",
+                params={"count": len(unexpected), "files": ", ".join(unexpected[:10])},
             )
         )
     return confounds
@@ -405,26 +431,35 @@ def _detect_capability_confounds(spec: ExperimentSpec, records: list[RunRecord])
             if status == "verified":
                 continue
             required_here = name in required
+            extra = (
+                "the experiment declares this capability as required, so the "
+                "result must not be attributed to it"
+                if required_here
+                else "no evidence was found that the framework change was "
+                "actually exercised by the agent"
+            )
+            evidence_note = (
+                f" ({evidence.get((variant.name, name), '')})"
+                if evidence.get((variant.name, name))
+                else ""
+            )
             confounds.append(
                 Confound(
                     kind="capability_unverified",
                     severity="blocker" if required_here else "warning",
                     detail=(
                         f"capability {name!r} of variant {variant.name!r} is {status}; "
-                        + (
-                            "the experiment declares this capability as required, so the "
-                            "result must not be attributed to it"
-                            if required_here
-                            else "no evidence was found that the framework change was "
-                            "actually exercised by the agent"
-                        )
-                        + (
-                            f" ({evidence.get((variant.name, name), '')})"
-                            if evidence.get((variant.name, name))
-                            else ""
-                        )
+                        + extra
+                        + evidence_note
                     ),
                     where=f"{variant.name}:{name}",
+                    code="confound.capability_unverified",
+                    params={
+                        "name": name,
+                        "variant": variant.name,
+                        "status": status,
+                        "extra": extra,
+                    },
                 )
             )
         if declared and not statuses:
@@ -437,6 +472,8 @@ def _detect_capability_confounds(spec: ExperimentSpec, records: list[RunRecord])
                         f"{declared} but the runtime produced no capability evidence at all"
                     ),
                     where=variant.name,
+                    code="confound.no_evidence",
+                    params={"variant": variant.name, "capabilities": declared},
                 )
             )
     return confounds
@@ -464,6 +501,11 @@ def _detect_repetition_confounds(spec: ExperimentSpec, records: list[RunRecord])
                     f"the variants were not run the same number of times: "
                     f"baseline={sorted(baseline_reps)} candidate={sorted(candidate_reps)}"
                 ),
+                code="confound.repetition_mismatch",
+                params={
+                    "baseline": sorted(baseline_reps),
+                    "candidate": sorted(candidate_reps),
+                },
             )
         )
     return confounds

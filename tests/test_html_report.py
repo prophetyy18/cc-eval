@@ -223,7 +223,7 @@ def test_traces_tab_shows_the_execution_path_of_both_sides(tmp_path: Path) -> No
     _invoke("run", "EXP-CLI", "--runner", "fake", "--root", str(root), "--file", str(spec_file))
     html = (root / "reports" / "EXP-T001" / "report.html").read_text(encoding="utf-8")
 
-    assert "A/B execution path" in html
+    assert "A/B 执行路径" in html
     assert "tool_call" in html  # the fake runner emits tool_call events
     assert "tool_result" in html
     # The runs of both variants are offered.
@@ -238,16 +238,16 @@ def test_metadata_tab_reports_the_provenance(tmp_path: Path) -> None:
     html = (root / "reports" / "EXP-T001" / "report.html").read_text(encoding="utf-8")
 
     for label in (
-        "Runtime",
-        "Model",
-        "Framework",
-        "Config hash",
-        "Dataset version",
-        "Evaluator version",
-        "Controls",
-        "Decision rules",
-        "Environment",
-        "Run ids",
+        "运行时",
+        "模型",
+        "框架",
+        "配置哈希",
+        "数据集版本",
+        "评估器版本",
+        "控制变量",
+        "判定规则",
+        "环境",
+        "运行 ID",
     ):
         assert label in html, f"the metadata tab must report {label}"
 
@@ -293,10 +293,10 @@ def test_failed_runs_are_marked_as_incomplete(tmp_path: Path, workspace_root) ->
     assert any("PARTIAL" in caveat for caveat in model.metadata.caveats)
 
     html = render_html(model)
-    assert "incomplete" in html
-    assert "This report is partial" in html
+    assert "未完成" in html
+    assert "这份报告是残缺的" in html
     # The banner says the verdict must not be read as a success.
-    assert "must not be read as a successful experiment" in html
+    assert "不能当作一次成功的实验" in html
     # The failure itself is visible.
     assert "boom" in html
 
@@ -324,7 +324,7 @@ def test_a_run_that_cannot_start_is_reported_as_incomplete(tmp_path: Path) -> No
 
     html = (root / "reports" / "EXP-T001" / "report.html").read_text(encoding="utf-8")
     assert "incomplete" in html
-    assert "This report is partial" in html
+    assert "这份报告是残缺的" in html
 
 
 def test_experiment_without_runs_is_failed(tmp_path: Path) -> None:
@@ -346,7 +346,7 @@ def test_experiment_without_runs_is_failed(tmp_path: Path) -> None:
 
     assert model.status == "failed"
     html = render_html(model)
-    assert "This experiment did not complete" in html
+    assert "这次实验没有跑完" in html
 
 
 def test_missing_values_are_shown_as_na_not_zero(tmp_path: Path) -> None:
@@ -363,7 +363,7 @@ def test_missing_values_are_shown_as_na_not_zero(tmp_path: Path) -> None:
     if cost is not None:
         assert cost["baseline"] is None
     assert "n/a" in html
-    assert "never means zero" in html
+    assert "绝不显示为 0" in html
 
 
 # --------------------------------------------------------------------------- #
@@ -542,5 +542,55 @@ def test_permission_denials_are_visible_in_the_report(tmp_path: Path) -> None:
 
     model = build_report_model(spec, comparison, records)
     html = render_html(model)
-    assert "denied" in html
+    assert "拒绝了 1 次工具调用" in html
     assert "mkdir -p docs/intents" in html
+    # The English rendering says the same thing.
+    assert "denied 1 tool call" in render_html(model, language="en")
+
+
+def test_the_report_is_rendered_in_chinese_by_default(tmp_path: Path) -> None:
+    """The report speaks the reader's language; the JSON stays neutral."""
+    from cc_eval.reports.html_report import render_html
+
+    baseline = write_framework(tmp_path / "fw" / "baseline", detectors=[("alpha", r"alpha")])
+    candidate = write_framework(tmp_path / "fw" / "candidate", detectors=[("alpha", r"alpha")])
+    benchmark = write_benchmark(
+        tmp_path / "bench",
+        known_defects=[
+            {"id": "D001", "category": "alpha", "description": "alpha", "match_keywords": ["alpha"]}
+        ],
+    )
+    spec_file = write_experiment(
+        tmp_path / "exp.yaml",
+        baseline_dir=baseline,
+        candidate_dir=candidate,
+        benchmark_dir=benchmark,
+        repetitions=1,
+        expected_changes=["skills/test_skill.py"],
+    )
+    records, _ = run_experiment(spec_file, tmp_path / "ws")
+
+    from cc_eval.comparison.compare import compare
+    from cc_eval.core.experiment import load_experiment
+
+    spec = load_experiment(spec_file)
+    comparison = compare(spec, records, dataset_version="v1", dataset_hash="abc", evaluator="det")
+    model = build_report_model(spec, comparison, records)
+
+    chinese = render_html(model)
+    for label in ("总览", "用例", "轨迹", "元数据", "结论", "实验", "指标 A/B 对比", "混淆因素"):
+        assert label in chinese, f"the Chinese report must contain {label}"
+
+    english = render_html(model, language="en")
+    for label in ("Overview", "Cases", "Traces", "Metadata", "Conclusion"):
+        assert label in english, f"the English report must contain {label}"
+
+    # The verdict sentence is translated, not just the labels: the two
+    # renderings do not contain each other's chrome.
+    assert "Conclusion" not in chinese
+    assert "结论" not in english
+
+    # The JSON report stays language neutral: English text plus the codes.
+    payload = model.to_payload()
+    assert payload["report"]["decision"]["reason_code"].startswith("reason.")
+    assert payload["report"]["decision"]["reason"].isascii()

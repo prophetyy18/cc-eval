@@ -323,15 +323,18 @@ def _write_report(
     target: Path,
     *,
     template: str | None = None,
+    language: str | None = None,
 ) -> Path:
     """Write one report file."""
     target.parent.mkdir(parents=True, exist_ok=True)
     if fmt == "html":
-        write_html(model, target, template=template)
+        write_html(model, target, template=template, language=language)
     elif fmt == "json":
         write_model_json(model, target)
     elif fmt == "md":
-        target.write_text(render_markdown(model.report, model.experiment), encoding="utf-8")
+        target.write_text(
+            render_markdown(model.report, model.experiment, language=language), encoding="utf-8"
+        )
     else:  # pragma: no cover - guarded by the CLI
         raise ValueError(f"unknown report format: {fmt}")
     return target
@@ -344,6 +347,7 @@ def _write_reports(
     *,
     output: str | None = None,
     template: str | None = None,
+    language: str | None = None,
 ) -> dict[str, Path]:
     """Write the requested report formats.
 
@@ -359,10 +363,12 @@ def _write_reports(
             target = Path(output) if len(formats) == 1 else Path(output).with_suffix(suffix)
         else:
             target = bundle / f"report{suffix}"
-        written[fmt] = _write_report(model, fmt, target, template=template)
+        written[fmt] = _write_report(model, fmt, target, template=template, language=language)
         if output is None and fmt in {"json", "md"}:
             legacy = paths.reports / f"{model.metadata.experiment_id}{suffix}"
-            written[f"legacy-{fmt}"] = _write_report(model, fmt, legacy, template=template)
+            written[f"legacy-{fmt}"] = _write_report(
+                model, fmt, legacy, template=template, language=language
+            )
     return written
 
 
@@ -583,6 +589,11 @@ def run(
     ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show the plan without running."),
     quiet: bool = typer.Option(False, "--quiet", "-q"),
+    language: str = typer.Option(
+        "",
+        "--lang",
+        help="Report language: zh (default) or en.  Also $CC_EVAL_LANG.",
+    ),
 ) -> None:
     """Execute an experiment: run every case for both variants."""
     paths = _paths(root)
@@ -721,7 +732,7 @@ def run(
         execution_warnings=execution.warnings,
     )
     report = model.report
-    written = _write_reports(model, ["html", "json", "md"], paths)
+    written = _write_reports(model, ["html", "json", "md"], paths, language=language or None)
     registry.append_decision(spec.id, report.decision)
     registry.register_experiment(
         spec.id,
@@ -916,6 +927,11 @@ def report_command(
     template: Optional[str] = typer.Option(
         None, "--template", help="Custom HTML template (Jinja2) to render the report with."
     ),
+    language: str = typer.Option(
+        "",
+        "--lang",
+        help="Report language: zh (default) or en.  Also $CC_EVAL_LANG.",
+    ),
 ) -> None:
     """Render the experiment report.
 
@@ -947,7 +963,9 @@ def report_command(
     model = _build_model(
         spec, records, paths, tree_diff=tree_diff, benchmark=benchmark
     )
-    written = _write_reports(model, formats, paths, output=output, template=template)
+    written = _write_reports(
+        model, formats, paths, output=output, template=template, language=language or None
+    )
 
     if "md" in formats:
         typer.echo(render_markdown(model.report, model.experiment))
@@ -970,6 +988,11 @@ def render_command(
     ),
     template: Optional[str] = typer.Option(
         None, "--template", help="Custom HTML template (Jinja2) to render the report with."
+    ),
+    language: str = typer.Option(
+        "",
+        "--lang",
+        help="Report language: zh (default) or en.  Also $CC_EVAL_LANG.",
     ),
 ) -> None:
     """(Re)render the reports from the stored runs - without running anything.
@@ -1002,7 +1025,9 @@ def render_command(
     model = _build_model(
         spec, records, paths, tree_diff=tree_diff, benchmark=benchmark
     )
-    written = _write_reports(model, formats, paths, output=output, template=template)
+    written = _write_reports(
+        model, formats, paths, output=output, template=template, language=language or None
+    )
 
     registry = Registry(paths.registry)
     registry.register_experiment(

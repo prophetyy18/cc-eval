@@ -73,7 +73,10 @@ def test_full_ab_experiment(tmp_path: Path, framework_pair, benchmark, workspace
 
     # -- both report formats render ---------------------------------------- #
     markdown = render_markdown(report, spec)
-    assert "Verdict: IMPROVED" in markdown
+    # The default report language is Chinese.
+    assert "结论: 改善" in markdown
+    # ... and the English rendering is one flag away.
+    assert "Verdict: IMPROVED" in render_markdown(report, spec, language="en")
     assert "CASE-001" in markdown
     json_payload = json.loads(render_json(report, spec))
     assert json_payload["schema"] == "cc-eval/report/v1"

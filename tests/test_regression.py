@@ -81,7 +81,7 @@ def test_regressed_cases_are_named_in_the_report(
 
     markdown = render_markdown(report, spec)
     assert "CASE-REG" in markdown
-    assert "Regressed on a non-primary metric" in markdown
+    assert "在非主指标上退化" in markdown
     assert "false_positive_count" in markdown
 
 

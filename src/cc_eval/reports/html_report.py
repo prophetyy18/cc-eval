@@ -27,6 +27,7 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from .charts import delta_bar, is_rate_metric, metric_mini_chart
+from .i18n import Translator, resolve_language
 from .model import ReportModel, metric_label
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -170,6 +171,7 @@ def _metric_cards(report: ReportModel) -> list[dict[str, Any]]:
                 "ci_high": aggregate.ci_high,
                 "significant": aggregate.significant,
                 "direction": aggregate.direction,
+                "direction_key": aggregate.direction,
                 "direction_label": _metric_direction_label(aggregate.direction),
                 "baseline_n": aggregate.baseline_n,
                 "candidate_n": aggregate.candidate_n,
@@ -259,8 +261,14 @@ def _trace_diff_rows(report: ReportModel) -> list[dict[str, Any]]:
     return rows
 
 
-def build_context(report: ReportModel) -> dict[str, Any]:
-    """Everything the template needs, derived from the report model."""
+def build_context(report: ReportModel, language: str | None = None) -> dict[str, Any]:
+    """Everything the template needs, derived from the report model.
+
+    The UI chrome and the engine's own sentences are rendered in the
+    requested language.  The JSON report stays language neutral - it carries
+    the English text plus the stable message codes.
+    """
+    translator = Translator(resolve_language(language))
     max_abs = 0.0
     for case in report.cases:
         if case.delta is not None:
@@ -281,6 +289,90 @@ def build_context(report: ReportModel) -> dict[str, Any]:
             run["permission_denials"] = denials
         case_views.append(view)
 
+    # -- the engine's own sentences, in the reader's language ---------------- #
+    decision = report.report.decision
+
+    # The confound details come first: the verdict reason quotes them.
+    confounds = []
+    for confound in report.report.confounds:
+        detail = translator.m(confound.code, **(confound.params or {})) or confound.detail
+        confounds.append(
+            {
+                "severity": confound.severity,
+                "kind": confound.kind,
+                "detail": detail,
+                "where": confound.where,
+            }
+        )
+
+    notes = []
+    for index, note in enumerate(decision.notes):
+        code = decision.notes_codes[index] if index < len(decision.notes_codes) else None
+        if code:
+            params = dict(code.get("params") or {})
+            if code.get("code") == "note.non_blocking_confounds":
+                blocking = [
+                    resolved["detail"]
+                    for confound, resolved in zip(report.report.confounds, confounds)
+                    if confound.severity != "blocker"
+                ]
+                if blocking:
+                    params["details"] = "; ".join(blocking)
+            notes.append(translator.m(code.get("code", ""), **params) or note)
+        else:
+            notes.append(note)
+
+    # The reason embeds the confound details; they are resolved above so the
+    # whole sentence is in one language.
+    reason_params = dict(decision.reason_params)
+    if decision.reason_code in {"reason.capability_blocked", "reason.confounded"}:
+        want_capability = decision.reason_code == "reason.capability_blocked"
+        resolved_details = [
+            resolved["detail"]
+            for confound, resolved in zip(report.report.confounds, confounds)
+            if (confound.kind == "capability_unverified") == want_capability
+        ]
+        if resolved_details:
+            reason_params["details"] = "; ".join(resolved_details)
+    reason = translator.m(decision.reason_code, **reason_params) or decision.reason
+
+    caveats = []
+    for index, caveat in enumerate(report.metadata.caveats):
+        code = (
+            report.metadata.caveat_codes[index]
+            if index < len(report.metadata.caveat_codes)
+            else None
+        )
+        if code:
+            caveats.append(
+                translator.m(code.get("code", ""), **(code.get("params") or {})) or caveat
+            )
+        else:
+            caveats.append(caveat)
+
+    for view in case_views:
+        resolved = []
+        for index, note in enumerate(view.get("notes") or []):
+            code = (
+                (view.get("note_codes") or [])[index]
+                if index < len(view.get("note_codes") or [])
+                else None
+            )
+            if code:
+                resolved.append(
+                    translator.m(code.get("code", ""), **(code.get("params") or {})) or note
+                )
+            else:
+                resolved.append(note)
+        view["notes_resolved"] = resolved
+
+    metadata = report.metadata
+    status_detail = (
+        translator.m(metadata.status_detail_code, **(metadata.status_detail_params or {}))
+        or metadata.status_detail
+    )
+
+    verdict = decision.verdict.value
     return {
         "report": report,
         "spec": report.experiment,
@@ -288,6 +380,18 @@ def build_context(report: ReportModel) -> dict[str, Any]:
         "cases": report.cases,
         "case_views": case_views,
         "metadata": report.metadata,
+        "L": translator.ui(),
+        "language": translator.language,
+        "decision": {
+            "verdict": verdict,
+            "label": translator.s(f"verdict_{verdict}"),
+            "reason": reason,
+            "notes": notes,
+            "decided_at": decision.decided_at,
+        },
+        "confounds": confounds,
+        "caveats": caveats,
+        "status_detail": status_detail,
         "metric_cards": _metric_cards(report),
         "primary_card": _primary_metric_card(report),
         "movement": _movement(report),
@@ -304,12 +408,17 @@ def build_context(report: ReportModel) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 
 
-def render_html(report: ReportModel, *, template: str | Path | None = None) -> str:
+def render_html(
+    report: ReportModel,
+    *,
+    template: str | Path | None = None,
+    language: str | None = None,
+) -> str:
     """Render the interactive HTML report."""
     if not isinstance(report, ReportModel):  # pragma: no cover - defensive
         raise TypeError("render_html expects a ReportModel")
     env_template = _load_template(template)
-    return env_template.render(**build_context(report))
+    return env_template.render(**build_context(report, language))
 
 
 def write_html(
@@ -317,11 +426,12 @@ def write_html(
     path: Path | str,
     *,
     template: str | Path | None = None,
+    language: str | None = None,
 ) -> Path:
     """Write the HTML report to disk and return its path."""
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_html(report, template=template), encoding="utf-8")
+    target.write_text(render_html(report, template=template, language=language), encoding="utf-8")
     return target
 
 

@@ -214,6 +214,20 @@ the **per-case** table (which cases improved, which regressed, which metrics
 they regressed on), the run-to-run variation, the cost and time movement, the
 confound analysis, and the verdict with the exact rule that produced it.
 
+#### Language
+
+The report is written in **Chinese by default**.  To read it in English:
+
+```bash
+cc-eval report EXP-001 --lang en
+export CC_EVAL_LANG=en          # for every report from now on
+```
+
+The JSON report stays language neutral: it carries the English text plus a
+stable message code (`reason.improved`, `confound.control_mismatch`, ...), so
+a machine never has to parse prose.  The HTML and the Markdown reports
+translate the chrome and the engine's own sentences.
+
 #### Re-rendering without running the experiment
 
 ```bash

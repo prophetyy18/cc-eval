@@ -66,9 +66,11 @@ _METRIC_LABELS = {
 }
 
 
-def metric_label(metric: str) -> str:
+def metric_label(metric: str, language: str | None = None) -> str:
     """Human readable name of a metric (shared by every renderer)."""
-    return _METRIC_LABELS.get(metric, metric.replace("_", " "))
+    from .i18n import metric_label as _label
+
+    return _label(metric, language) if language else _label(metric)
 
 
 # --------------------------------------------------------------------------- #
@@ -169,6 +171,8 @@ class ReportMetadata(StrictModel):
     framework_change: str = ""
     status: ReportStatus = "complete"
     status_detail: str = ""
+    status_detail_code: str = ""
+    status_detail_params: dict[str, Any] = Field(default_factory=dict)
     verdict: str = "pending"
     verdict_reason: str = ""
     primary_metric: str = ""
@@ -209,6 +213,8 @@ class ReportMetadata(StrictModel):
     warnings: list[str] = Field(default_factory=list)
     manual_review_cases: list[str] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
+    #: The stable identifiers of the caveats, with their parameters.
+    caveat_codes: list[dict[str, Any]] = Field(default_factory=list)
     missing_data: list[str] = Field(default_factory=list)
     redaction_stats: dict[str, int] = Field(default_factory=dict)
     generated_at: str = Field(default_factory=utcnow_iso)
@@ -516,7 +522,7 @@ def _build_metadata(
         if result.trace is not None:
             missing_data.update(result.trace.missing_fields)
 
-    status, status_detail = _status_of(records, execution_errors)
+    status, status_detail, status_code, status_params = _status_of(records, execution_errors)
     failed_runs = sum(count for status_name, count in run_statuses.items() if status_name != "success")
 
     metadata = ReportMetadata(
@@ -527,6 +533,8 @@ def _build_metadata(
         framework_change=spec.framework_change,
         status=status,
         status_detail=status_detail,
+        status_detail_code=status_code,
+        status_detail_params=status_params,
         verdict=comparison.decision.verdict.value,
         verdict_reason=comparison.decision.reason,
         primary_metric=spec.decision_rules.primary_metric,
@@ -592,30 +600,48 @@ def _cc_eval_version() -> str:
 
 def _status_of(
     records: Sequence[RunRecord], execution_errors: Sequence[str]
-) -> tuple[ReportStatus, str]:
+) -> tuple[ReportStatus, str, str, dict[str, Any]]:
     """Decide whether the experiment completed, partially ran or failed."""
     if not records:
         detail = (
             "no run was recorded for this experiment; the report contains no measurements"
         )
+        params: dict[str, Any] = {}
         if execution_errors:
             detail += f"; {len(execution_errors)} execution error(s): {execution_errors[0]}"
-        return "failed", detail
+            params = {"errors": len(execution_errors), "first": execution_errors[0]}
+        return "failed", detail, "status.no_runs", params
     failed = [r for r in records if not r.result.ok]
     if failed:
+        statuses = ", ".join(sorted({r.result.status for r in failed}))
         detail = (
             f"{len(failed)} of {len(records)} run(s) did not complete successfully "
-            f"(statuses: {', '.join(sorted({r.result.status for r in failed}))}); "
+            f"(statuses: {statuses}); "
             "the numbers below cover the successful runs only"
         )
-        return "incomplete", detail
+        return (
+            "incomplete",
+            detail,
+            "status.failed_runs",
+            {"failed": len(failed), "total": len(records), "statuses": statuses},
+        )
     if execution_errors:
         detail = (
             f"{len(execution_errors)} run(s) failed before they could be recorded; "
             "the numbers below are partial"
         )
-        return "incomplete", detail
-    return "complete", "every planned run completed successfully"
+        return (
+            "incomplete",
+            detail,
+            "status.execution_errors",
+            {"errors": len(execution_errors)},
+        )
+    return (
+        "complete",
+        "every planned run completed successfully",
+        "status.complete",
+        {},
+    )
 
 
 def _caveats(
@@ -628,38 +654,60 @@ def _caveats(
 ) -> list[str]:
     """Honest warnings about how much the numbers can support."""
     caveats: list[str] = []
+    codes: list[dict[str, Any]] = []
+
+    def _caveat(text: str, code: str, **params: Any) -> None:
+        caveats.append(text)
+        codes.append({"code": code, "params": params})
+
     if metadata.status != "complete":
-        caveats.append(
+        _caveat(
             "This report is PARTIAL: not every planned run completed. "
-            "The verdict below applies to the runs that did complete."
+            "The verdict below applies to the runs that did complete.",
+            "caveat.partial",
         )
     if failed_runs:
-        caveats.append(f"{failed_runs} run(s) failed; their cases may be missing from the averages.")
+        _caveat(
+            f"{failed_runs} run(s) failed; their cases may be missing from the averages.",
+            "caveat.failed_runs",
+            count=failed_runs,
+        )
     if metadata.repetitions < 2:
-        caveats.append(
+        _caveat(
             f"Only {metadata.repetitions} repetition(s) per case: the per-case numbers are a "
-            "single sample and cannot show run-to-run variation."
+            "single sample and cannot show run-to-run variation.",
+            "caveat.few_repetitions",
+            repetitions=metadata.repetitions,
         )
     if len(cases) < 3:
-        caveats.append(
+        _caveat(
             f"Only {len(cases)} case(s): the confidence interval is too wide to support a "
-            "confident conclusion."
+            "confident conclusion.",
+            "caveat.few_cases",
+            count=len(cases),
         )
     if not metadata.confound_free:
         blockers = [c for c in metadata.confounds if c.get("severity") == "blocker"]
-        caveats.append(
+        _caveat(
             f"{len(blockers)} blocking confound(s) were detected; the difference cannot be "
-            "attributed to the independent variable."
+            "attributed to the independent variable.",
+            "caveat.blocking_confounds",
+            count=len(blockers),
         )
     if metadata.missing_data:
-        caveats.append(
+        _caveat(
             "Some data is not available from the runtime ("
             + ", ".join(metadata.missing_data[:6])
-            + "); those cells are shown as n/a, never as zero."
+            + "); those cells are shown as n/a, never as zero.",
+            "caveat.missing_data",
+            fields=", ".join(metadata.missing_data[:6]),
         )
     if comparison.manual_review_cases:
-        caveats.append(
+        _caveat(
             f"{len(comparison.manual_review_cases)} case(s) differ only within noise and need "
-            "a human review."
+            "a human review.",
+            "caveat.manual_review",
+            count=len(comparison.manual_review_cases),
         )
+    metadata.caveat_codes = codes
     return caveats

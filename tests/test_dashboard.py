@@ -418,3 +418,26 @@ def test_a_case_can_be_authored_run_and_streamed(tmp_path: Path, monkeypatch) ->
         assert event["status"] == "success"
         assert "out/result.json" in event["outputs"]
         assert event["counts"]["doc"] >= 1
+
+
+def test_a_restart_keeps_the_session(tmp_path: Path) -> None:
+    """Restarting the console must not log everybody out."""
+    from cc_eval.dashboard.server import ConsoleServer as Server
+
+    paths = EvalPaths(tmp_path / "ws")
+    paths.ensure()
+    config = ConsoleConfig(
+        host="127.0.0.1", port=0, viewer_token="v-token", admin_token="a-token"
+    )
+    first = Server(paths, config)
+    second = Server(paths, config)
+    assert first.secret == second.secret
+
+    cookie = first.issue("viewer")
+    session = second.read_session(cookie)
+    assert session is not None
+    assert session.role == "viewer"
+
+    # A different token is a different secret: the old sessions die with it.
+    other = Server(paths, ConsoleConfig(host="127.0.0.1", port=0, viewer_token="other"))
+    assert other.read_session(cookie) is None

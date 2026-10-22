@@ -29,7 +29,7 @@ import secrets
 import threading
 import time
 from dataclasses import dataclass
-from hashlib import sha256
+import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -103,7 +103,11 @@ class ConsoleServer:
     def __init__(self, paths: EvalPaths, config: ConsoleConfig) -> None:
         self.paths = paths
         self.config = config
-        self.secret = secrets.token_bytes(32)
+        # The session secret is derived from the tokens, so restarting the
+        # console does not log everybody out.  Changing a token does.
+        self.secret = hashlib.sha256(
+            f"cc-eval-console:{config.viewer_token}:{config.admin_token}".encode()
+        ).digest()
         self.registry = Registry(paths.registry)
         self.manager = RunManager(
             paths, allowed_framework_roots=config.allowed_framework_roots
@@ -131,7 +135,7 @@ class ConsoleServer:
 
     # -- sessions ---------------------------------------------------------- #
     def _sign(self, payload: bytes) -> str:
-        return hmac.new(self.secret, payload, sha256).hexdigest()
+        return hmac.new(self.secret, payload, hashlib.sha256).hexdigest()
 
     def issue(self, role: str) -> str:
         body = json.dumps({"role": role, "exp": time.time() + SESSION_TTL_SECONDS}).encode()

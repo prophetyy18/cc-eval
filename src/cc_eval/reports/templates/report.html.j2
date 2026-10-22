@@ -394,24 +394,24 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
     <div class="topbar-meta">
       <span class="pill {% if metadata.status == 'complete' %}pill-good{% elif metadata.status == 'failed' %}pill-critical{% else %}pill-warning{% endif %}">
         <span class="pill-icon" aria-hidden="true">{% if metadata.status == 'complete' %}●{% elif metadata.status == 'failed' %}✕{% else %}▲{% endif %}</span>
-        {% if metadata.status == 'complete' %}complete{% elif metadata.status == 'failed' %}failed{% else %}incomplete{% endif %}
+        {% if metadata.status == 'complete' %}{{ L.complete }}{% elif metadata.status == 'failed' %}{{ L.failed }}{% else %}{{ L.incomplete }}{% endif %}
       </span>
       <span class="pill pill-{{ comparison.decision.verdict.value }}">
         <span class="pill-icon" aria-hidden="true">{% if comparison.decision.verdict.value == 'improved' %}▲{% elif comparison.decision.verdict.value == 'regressed' %}▼{% else %}◆{% endif %}</span>
         {{ comparison.decision.verdict.value }}
       </span>
-      <span class="meta-item"><span class="meta-label">generated</span> {{ metadata.generated_at }}</span>
-      <span class="meta-item"><span class="meta-label">runtime</span> {{ metadata.runtime or 'unknown' }}{% if metadata.model %} · {{ metadata.model }}{% endif %}</span>
+      <span class="meta-item"><span class="meta-label">{{ L.generated }}</span> {{ metadata.generated_at }}</span>
+      <span class="meta-item"><span class="meta-label">{{ L.runtime }}</span> {{ metadata.runtime or 'unknown' }}{% if metadata.model %} · {{ metadata.model }}{% endif %}</span>
     </div>
   </div>
 </header>
 
 <nav class="tabs" role="tablist" aria-label="Report sections">
   <div class="tabs-inner">
-    <button class="tab-button" role="tab" aria-selected="true" aria-controls="tab-overview" id="tabbtn-overview" data-tab="tab-overview">Overview</button>
-    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-cases" id="tabbtn-cases" data-tab="tab-cases">Cases<span class="tab-count">{{ movement.total }}</span></button>
-    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-traces" id="tabbtn-traces" data-tab="tab-traces">Traces<span class="tab-count">{{ metadata.run_counts.get('total', 0) }}</span></button>
-    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-metadata" id="tabbtn-metadata" data-tab="tab-metadata">Metadata</button>
+    <button class="tab-button" role="tab" aria-selected="true" aria-controls="tab-overview" id="tabbtn-overview" data-tab="tab-overview">{{ L.tab_overview }}</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-cases" id="tabbtn-cases" data-tab="tab-cases">{{ L.tab_cases }}<span class="tab-count">{{ movement.total }}</span></button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-traces" id="tabbtn-traces" data-tab="tab-traces">{{ L.tab_traces }}<span class="tab-count">{{ metadata.run_counts.get('total', 0) }}</span></button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-metadata" id="tabbtn-metadata" data-tab="tab-metadata">{{ L.tab_metadata }}</button>
   </div>
 </nav>
 
@@ -424,9 +424,9 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
   <div class="banner banner-{{ metadata.status }}" role="status">
     <span class="banner-icon" aria-hidden="true">{% if metadata.status == 'failed' %}✕{% else %}▲{% endif %}</span>
     <div>
-      <strong>{% if metadata.status == 'failed' %}This experiment did not complete{% else %}This report is partial{% endif %}</strong>
-      <p>{{ metadata.status_detail }}</p>
-      <p>The verdict below was derived from the runs that did complete and must not be read as a successful experiment.</p>
+      <strong>{% if metadata.status == 'failed' %}{{ L.failed_banner }}{% else %}{{ L.partial_banner }}{% endif %}</strong>
+      <p>{{ status_detail }}</p>
+      <p>{{ L.partial_warning }}</p>
     </div>
   </div>
   {% endif %}
@@ -434,51 +434,51 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
   <div class="grid-2">
     <article class="card">
       <div class="card-head">
-        <h2>Conclusion</h2>
-        <span class="muted" style="font-size:12px">decided {{ comparison.decision.decided_at }}</span>
+        <h2>{{ L.conclusion }}</h2>
+        <span class="muted" style="font-size:12px">{{ L.decided_at }} {{ decision.decided_at }}</span>
       </div>
       <div class="verdict-line">
         <span class="verdict-word verdict-{{ comparison.decision.verdict.value }}">
           {% if comparison.decision.verdict.value == 'improved' %}▲{% elif comparison.decision.verdict.value == 'regressed' %}▼{% else %}◆{% endif %}
-          {{ comparison.decision.verdict.value }}
+          {{ decision.label }}
         </span>
         <span class="pill">{{ metadata.primary_metric }}</span>
       </div>
-      <p class="verdict-reason">{{ comparison.decision.reason }}</p>
+      <p class="verdict-reason">{{ decision.reason }}</p>
       <ul class="evidence">
         {% if primary_card %}
-        <li><span class="evidence-key">Primary metric</span>
-          <span class="tabular">{{ metadata.primary_metric }}: {{ primary_card.baseline|number }} → {{ primary_card.candidate|number }}
+        <li><span class="evidence-key">{{ L.primary_metric }}</span>
+          <span class="tabular">{{ primary_card.label }}: {{ primary_card.baseline|metric_number(primary_card.metric) }} → {{ primary_card.candidate|metric_number(primary_card.metric) }}
           (Δ {{ primary_card.delta|signed }}{% if primary_card.delta_pct is not none %} / {{ primary_card.delta_pct|percent }}{% endif %})</span></li>
         {% endif %}
-        <li><span class="evidence-key">Confidence</span>
-          <span class="tabular">{% if primary_card and primary_card.ci_low is not none %}95% CI [{{ primary_card.ci_low|number }}, {{ primary_card.ci_high|number }}]{% if primary_card.significant %} · significant{% else %} · not significant{% endif %}{% else %}no interval available{% endif %}</span></li>
-        <li><span class="evidence-key">Cases</span>
-          <span class="tabular">{{ movement.counts.improved }} improved · {{ movement.counts.regressed }} regressed · {{ movement.counts.unchanged }} unchanged · {{ movement.counts.unknown }} undetermined</span></li>
-        <li><span class="evidence-key">Attribution</span>
-          <span class="tabular">{% if metadata.confound_free %}no blocking confound{% else %}{{ metadata.confounds|length }} confound(s), {{ metadata.confounds|selectattr('severity', 'equalto', 'blocker')|list|length }} blocking{% endif %}</span></li>
-        <li><span class="evidence-key">Runs</span>
-          <span class="tabular">{{ metadata.run_counts.get('baseline', 0) }} baseline · {{ metadata.run_counts.get('candidate', 0) }} candidate · {{ metadata.repetitions }} repetition(s)</span></li>
+        <li><span class="evidence-key">{{ L.confidence }}</span>
+          <span class="tabular">{% if primary_card and primary_card.ci_low is not none %}95% CI [{{ primary_card.ci_low|number }}, {{ primary_card.ci_high|number }}]{% if primary_card.significant %} · {{ L.significant }}{% else %} · {{ L.not_significant }}{% endif %}{% else %}{{ L.no_interval }}{% endif %}</span></li>
+        <li><span class="evidence-key">{{ L.cases_count }}</span>
+          <span class="tabular">{{ movement.counts.improved }} {{ L.improved }} · {{ movement.counts.regressed }} {{ L.regressed }} · {{ movement.counts.unchanged }} {{ L.unchanged }} · {{ movement.counts.unknown }} {{ L.undetermined }}</span></li>
+        <li><span class="evidence-key">{{ L.attribution }}</span>
+          <span class="tabular">{% if metadata.confound_free %}{{ L.no_blocking_confound }}{% else %}{{ metadata.confounds|length }} {{ L.confounds_count }}, {{ metadata.confounds|selectattr('severity', 'equalto', 'blocker')|list|length }} {{ L.blocking_count }}{% endif %}</span></li>
+        <li><span class="evidence-key">{{ L.runs }}</span>
+          <span class="tabular">{{ metadata.run_counts.get('baseline', 0) }} {{ L.baseline }} · {{ metadata.run_counts.get('candidate', 0) }} {{ L.candidate }} · {{ metadata.repetitions }} {{ L.repetitions }}</span></li>
       </ul>
-      {% if comparison.decision.notes %}
-      <p class="muted" style="font-size:12px;margin-top:10px">{{ comparison.decision.notes }}</p>
+      {% if decision.notes %}
+      <p class="muted" style="font-size:12px;margin-top:10px">{{ decision.notes|join("; ") }}</p>
       {% endif %}
     </article>
 
     <article class="card">
-      <h2>Experiment</h2>
+      <h2>{{ L.experiment }}</h2>
       <dl class="kv">
-        <dt>Hypothesis</dt><dd>{{ spec.hypothesis or '—' }}</dd>
-        <dt>Independent variable</dt><dd>{{ spec.independent_variable or '—' }}</dd>
+        <dt>{{ L.hypothesis }}</dt><dd>{{ spec.hypothesis or '—' }}</dd>
+        <dt>{{ L.independent_variable }}</dt><dd>{{ spec.independent_variable or '—' }}</dd>
         {% if spec.framework_change %}
-        <dt>Change under test</dt><dd>{{ spec.framework_change }}</dd>
+        <dt>{{ L.change_under_test }}</dt><dd>{{ spec.framework_change }}</dd>
         {% endif %}
-        <dt>Baseline</dt><dd>{{ metadata.baseline_variant }} <span class="muted">({{ spec.baseline.framework.type }}{% if spec.baseline.framework.ref %} {{ spec.baseline.framework.ref }}{% elif spec.baseline.framework.path %} {{ spec.baseline.framework.path }}{% endif %})</span></dd>
-        <dt>Candidate</dt><dd>{{ metadata.candidate_variant }} <span class="muted">({{ spec.candidate.framework.type }}{% if spec.candidate.framework.ref %} {{ spec.candidate.framework.ref }}{% elif spec.candidate.framework.path %} {{ spec.candidate.framework.path }}{% endif %})</span></dd>
-        <dt>Dataset</dt><dd>{{ metadata.dataset_name or '—' }} <span class="muted">{{ metadata.dataset_version }}</span></dd>
-        <dt>Evaluator</dt><dd>{{ metadata.evaluator or '—' }} <span class="muted">{{ metadata.evaluator_version }}</span></dd>
+        <dt>{{ L.baseline }}</dt><dd>{{ metadata.baseline_variant }} <span class="muted">({{ spec.baseline.framework.type }}{% if spec.baseline.framework.ref %} {{ spec.baseline.framework.ref }}{% elif spec.baseline.framework.path %} {{ spec.baseline.framework.path }}{% endif %})</span></dd>
+        <dt>{{ L.candidate }}</dt><dd>{{ metadata.candidate_variant }} <span class="muted">({{ spec.candidate.framework.type }}{% if spec.candidate.framework.ref %} {{ spec.candidate.framework.ref }}{% elif spec.candidate.framework.path %} {{ spec.candidate.framework.path }}{% endif %})</span></dd>
+        <dt>{{ L.dataset }}</dt><dd>{{ metadata.dataset_name or '—' }} <span class="muted">{{ metadata.dataset_version }}</span></dd>
+        <dt>{{ L.evaluator }}</dt><dd>{{ metadata.evaluator or '—' }} <span class="muted">{{ metadata.evaluator_version }}</span></dd>
         {% if spec.references %}
-        <dt>References</dt><dd>{% for reference in spec.references %}<div>{{ reference }}</div>{% endfor %}</dd>
+        <dt>{{ L.references }}</dt><dd>{% for reference in spec.references %}<div>{{ reference }}</div>{% endfor %}</dd>
         {% endif %}
       </dl>
     </article>
@@ -486,9 +486,9 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
 
   {% if metadata.caveats %}
   <article class="card">
-    <h2>What this data does not support</h2>
+    <h2>{{ L.what_this_does_not_support }}</h2>
     <ul class="notes" style="font-size:13px">
-      {% for caveat in metadata.caveats %}
+      {% for caveat in caveats %}
       <li>{{ caveat }}</li>
       {% endfor %}
     </ul>
@@ -502,20 +502,20 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <span class="tile-value"><span class="tile-from">{{ primary_card.baseline|metric_number(primary_card.metric) }}</span> → {{ primary_card.candidate|metric_number(primary_card.metric) }}</span>
       <span class="tile-foot {% if primary_card.delta is not none and (primary_card.delta > 0) == (primary_card.direction == 'higher_is_better') %}delta-good{% elif primary_card.delta is not none %}delta-bad{% endif %}">
         {% if primary_card.delta is none %}Δ n/a{% else %}{% if primary_card.delta > 0 %}▲{% elif primary_card.delta < 0 %}▼{% else %}◆{% endif %} Δ {{ primary_card.delta|signed }}{% if primary_card.delta_pct is not none %} ({{ primary_card.delta_pct|percent }}){% endif %}{% endif %}
-        · {{ primary_card.direction_label }}
+        · {{ L[primary_card.direction_key] }}
       </span>
     </div>
     {% endif %}
     <div class="tile">
-      <span class="tile-label">Cases improved</span>
+      <span class="tile-label">{{ L.cases_improved }}</span>
       <span class="tile-value">{{ movement.counts.improved }}</span>
-      <span class="tile-foot">of {{ movement.total }} cases</span>
+      <span class="tile-foot">{{ L.of_cases.format(n=movement.total) }}</span>
     </div>
     <div class="tile">
-      <span class="tile-label">Cases regressed</span>
+      <span class="tile-label">{{ L.cases_regressed }}</span>
       <span class="tile-value">{{ movement.counts.regressed }}</span>
-      <span class="tile-foot">{{ movement.counts.unchanged }} unchanged · {{ movement.counts.unknown }} undetermined
-        {%- if movement.counts.guard %} · {{ movement.counts.guard }} regressed on another metric{% endif %}</span>
+      <span class="tile-foot">{{ L.unchanged_undetermined.format(unchanged=movement.counts.unchanged, undetermined=movement.counts.unknown) }}
+        {%- if movement.counts.guard %} · {{ movement.counts.guard }} {{ L.regressed_other_metric }}{% endif %}</span>
     </div>
     {% for total in totals %}
     <div class="tile">
@@ -525,20 +525,20 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
     </div>
     {% endfor %}
     <div class="tile">
-      <span class="tile-label">Cost delta</span>
+      <span class="tile-label">{{ L.cost_delta }}</span>
       <span class="tile-value">{% if comparison.cost_delta_usd is none %}n/a{% else %}{{ comparison.cost_delta_usd|signed }}{% endif %}</span>
-      <span class="tile-foot">USD{% if comparison.cost_delta_usd is none %} · not reported by the runtime{% endif %}</span>
+      <span class="tile-foot">{{ L.usd }}{% if comparison.cost_delta_usd is none %} · {{ L.not_reported_by_runtime }}{% endif %}</span>
     </div>
     <div class="tile">
-      <span class="tile-label">Duration delta</span>
+      <span class="tile-label">{{ L.duration_delta }}</span>
       <span class="tile-value">{% if comparison.duration_delta_sec is none %}n/a{% else %}{{ comparison.duration_delta_sec|signed }}{% endif %}</span>
-      <span class="tile-foot">seconds</span>
+      <span class="tile-foot">{{ L.seconds }}</span>
     </div>
   </div>
 
   <article class="card">
     <div class="card-head">
-      <h2>Metric A/B</h2>
+      <h2>{{ L.metric_ab }}</h2>
       <div class="legend">
         <span class="legend-item"><span class="legend-swatch" style="background:var(--series-1)"></span>{{ metadata.baseline_variant }}</span>
         <span class="legend-item"><span class="legend-swatch" style="background:var(--series-2)"></span>{{ metadata.candidate_variant }}</span>
@@ -550,7 +550,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <figure class="chart-card">
         <figcaption>
           <span class="chart-title">{{ card.label }}</span>
-          <span class="chart-sub">{{ card.direction_label }} · n={{ card.baseline_n }}/{{ card.candidate_n }}</span>
+          <span class="chart-sub">{{ L[card.direction_key] }} · n={{ card.baseline_n }}/{{ card.candidate_n }}</span>
         </figcaption>
         {{ card.svg|safe }}
         <p class="chart-foot">
@@ -562,19 +562,19 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       {% endfor %}
     </div>
     {% else %}
-    <p class="empty">No metric was measured.</p>
+    <p class="empty">{{ L.no_metric }}</p>
     {% endif %}
   </article>
 
   <article class="card">
-    <h2>Metric table</h2>
+    <h2>{{ L.metric_table }}</h2>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Metric</th><th class="num">Baseline</th><th class="num">Candidate</th>
+            <th>{{ L.metric }}</th><th class="num">Baseline</th><th class="num">Candidate</th>
             <th class="num">Δ</th><th class="num">Δ%</th><th>95% CI</th>
-            <th class="num">n</th><th>Direction</th>
+            <th class="num">n</th><th>{{ L.direction }}</th>
           </tr>
         </thead>
         <tbody>
@@ -590,23 +590,23 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <td>{{ card.direction_label }}</td>
           </tr>
           {% else %}
-          <tr><td colspan="8" class="empty">No metric was measured.</td></tr>
+          <tr><td colspan="8" class="empty">{{ L.no_metric }}</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:8px">Values are macro-averages: each case is averaged over its repetitions first, then the cases are averaged. “n/a” means the runtime did not report the value - it never means zero.</p>
+    <p class="muted" style="font-size:12px;margin-top:8px">{{ L.macro_average_note }}</p>
   </article>
 
   <article class="card">
-    <h2>Movement by case</h2>
+    <h2>{{ L.movement_by_case }}</h2>
     <div class="movement-grid">
       {% for key, label, icon, icon_class in [
-        ('improved', 'Improved', '▲', 'icon-good'),
-        ('regressed', 'Regressed', '▼', 'icon-critical'),
-        ('unchanged', 'Unchanged', '=', 'icon-neutral'),
-        ('unknown', 'Undetermined', '?', 'icon-warning'),
-        ('guard', 'Regressed on another metric', '◆', 'icon-serious')] %}
+        ('improved', L.improved, '▲', 'icon-good'),
+        ('regressed', L.regressed, '▼', 'icon-critical'),
+        ('unchanged', L.unchanged, '=', 'icon-neutral'),
+        ('unknown', L.undetermined, '?', 'icon-warning'),
+        ('guard', L.regressed_other_metric, '◆', 'icon-serious')] %}
       <div class="movement-card">
         <div class="movement-head">
           <span class="{{ icon_class }}" aria-hidden="true">{{ icon }}</span>
@@ -618,7 +618,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
           {% for case_id in movement.groups[key] %}<li>{{ case_id }}</li>{% endfor %}
         </ul>
         {% else %}
-        <p class="muted" style="font-size:12px;margin:0">None.</p>
+        <p class="muted" style="font-size:12px;margin:0">{{ L.none }}.</p>
         {% endif %}
       </div>
       {% endfor %}
@@ -627,12 +627,12 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
 
   {% if comparison.confounds %}
   <article class="card">
-    <h2>Confounds</h2>
+    <h2>{{ L.confounds }}</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Severity</th><th>Kind</th><th>Detail</th><th>Where</th></tr></thead>
+        <thead><tr><th>{{ L.severity }}</th><th>{{ L.kind }}</th><th>{{ L.detail }}</th><th>{{ L.where }}</th></tr></thead>
         <tbody>
-          {% for confound in comparison.confounds %}
+          {% for confound in confounds %}
           <tr>
             <td>
               <span class="status-chip {% if confound.severity == 'blocker' %}icon-critical{% elif confound.severity == 'warning' %}icon-warning{% else %}icon-neutral{% endif %}">
@@ -653,16 +653,16 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
 
   {% if comparison.manual_review_cases %}
   <article class="card">
-    <h2>Needs human review</h2>
+    <h2>{{ L.needs_human_review }}</h2>
     <ul class="notes">
-      {% for case_id in comparison.manual_review_cases %}<li><code>{{ case_id }}</code> — the difference is within noise.</li>{% endfor %}
+      {% for case_id in comparison.manual_review_cases %}<li><code>{{ case_id }}</code> — {{ L.within_noise }}</li>{% endfor %}
     </ul>
   </article>
   {% endif %}
 
   {% if metadata.warnings %}
   <article class="card">
-    <h2>Warnings</h2>
+    <h2>{{ L.warnings }}</h2>
     <ul class="notes">
       {% for warning in metadata.warnings %}<li>{{ warning }}</li>{% endfor %}
     </ul>
@@ -674,13 +674,13 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
 {# ============================ CASES ============================ #}
 <section id="tab-cases" class="tab-panel" role="tabpanel" aria-labelledby="tabbtn-cases" hidden>
   <div class="filter-row">
-    <input type="search" id="case-search" placeholder="Search case id, category or tag…" aria-label="Search cases">
+    <input type="search" id="case-search" placeholder="{{ L.search_placeholder }}" aria-label="Search cases">
     <div class="chips" role="group" aria-label="Filter by movement">
-      <button class="chip" data-case-filter="all" aria-pressed="true">All<span class="chip-count">{{ movement.total }}</span></button>
-      <button class="chip" data-case-filter="improved" aria-pressed="false">▲ Improved<span class="chip-count">{{ movement.counts.improved }}</span></button>
-      <button class="chip" data-case-filter="regressed" aria-pressed="false">▼ Regressed<span class="chip-count">{{ movement.counts.regressed }}</span></button>
-      <button class="chip" data-case-filter="unchanged" aria-pressed="false">= Unchanged<span class="chip-count">{{ movement.counts.unchanged }}</span></button>
-      <button class="chip" data-case-filter="unknown" aria-pressed="false">? Undetermined<span class="chip-count">{{ movement.counts.unknown }}</span></button>
+      <button class="chip" data-case-filter="all" aria-pressed="true">{{ L.all }}<span class="chip-count">{{ movement.total }}</span></button>
+      <button class="chip" data-case-filter="improved" aria-pressed="false">▲ {{ L.improved }}<span class="chip-count">{{ movement.counts.improved }}</span></button>
+      <button class="chip" data-case-filter="regressed" aria-pressed="false">▼ {{ L.regressed }}<span class="chip-count">{{ movement.counts.regressed }}</span></button>
+      <button class="chip" data-case-filter="unchanged" aria-pressed="false">= {{ L.unchanged }}<span class="chip-count">{{ movement.counts.unchanged }}</span></button>
+      <button class="chip" data-case-filter="unknown" aria-pressed="false">? {{ L.undetermined }}<span class="chip-count">{{ movement.counts.unknown }}</span></button>
     </div>
     <span class="filter-count" id="case-filter-count"></span>
   </div>
@@ -690,14 +690,14 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <table id="cases-table">
         <thead>
           <tr>
-            <th class="sortable" data-sort-key="case_id">Case<span class="sort-caret">↕</span></th>
-            <th class="sortable" data-sort-key="task_type">Category<span class="sort-caret">↕</span></th>
-            <th>Tags</th>
+            <th class="sortable" data-sort-key="case_id">{{ L.case }}<span class="sort-caret">↕</span></th>
+            <th class="sortable" data-sort-key="task_type">{{ L.category }}<span class="sort-caret">↕</span></th>
+            <th>{{ L.tags }}</th>
             <th class="num sortable" data-sort-key="baseline">Baseline<span class="sort-caret">↕</span></th>
             <th class="num sortable" data-sort-key="candidate">Candidate<span class="sort-caret">↕</span></th>
             <th class="num sortable" data-sort-key="delta">Δ<span class="sort-caret">↕</span></th>
-            <th>Movement</th>
-            <th class="num">Reps</th>
+            <th>{{ L.movement }}</th>
+            <th class="num">{{ L.reps }}</th>
           </tr>
         </thead>
         <tbody>
@@ -738,9 +738,9 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                 {% if case.title %}<p class="secondary"><strong>{{ case.title }}</strong></p>{% endif %}
                 {% if case.notes %}
                 <div>
-                  <h4>Assessment</h4>
+                  <h4>{{ L.assessment }}</h4>
                   <ul class="notes">
-                    {% for note in case.notes %}<li>{{ note }}</li>{% endfor %}
+                    {% for note in case.notes_resolved %}<li>{{ note }}</li>{% endfor %}
                   </ul>
                 </div>
                 {% endif %}
@@ -753,13 +753,13 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                     </h4>
                     {% set runs = case.runs|selectattr('variant', 'equalto', side)|list %}
                     {% if not runs %}
-                    <p class="empty">No run was recorded for this side.</p>
+                    <p class="empty">{{ L.no_run_for_side }}</p>
                     {% endif %}
                     {% for run in runs %}
                     <div class="detail-run">
                       <div class="run-title">
                         <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status }}</span>
-                        <span>repetition {{ run.repetition }}</span>
+                        <span>{{ L.repetition }} {{ run.repetition }}</span>
                         <span class="muted">{{ run.run_id }}</span>
                       </div>
                       {% if run.error %}
@@ -776,7 +776,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                         <dt>cost</dt><dd class="tabular">{% if run.usage.cost_usd is none %}n/a{% else %}{{ run.usage.cost_usd|number }} USD{% endif %}</dd>
                       </dl>
                       {% if run.matched or run.unmatched_golden or run.unmatched_predictions %}
-                      <h4>Scoring evidence</h4>
+                      <h4>{{ L.scoring_evidence }}</h4>
                       <ul class="evidence-list">
                         {% for item in run.matched %}<li>matched <code>{{ item.golden_id }}</code> → <code>{{ item.predicted_id or '—' }}</code> ({{ item.matched_by }})</li>{% endfor %}
                         {% for golden in run.unmatched_golden %}<li>missed ground truth <code>{{ golden }}</code></li>{% endfor %}
@@ -789,11 +789,11 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                       </div>
                       {% endif %}
                       {% if run.output_text %}
-                      <h4>Agent output</h4>
+                      <h4>{{ L.agent_output }}</h4>
                       <pre>{{ run.output_text }}</pre>
                       {% endif %}
                       {% for path, content in run.output_files.items() %}
-                      <h4>Output file · {{ path }}</h4>
+                      <h4>{{ L.output_file }} · {{ path }}</h4>
                       <pre>{{ content }}</pre>
                       {% endfor %}
                     </div>
@@ -802,10 +802,10 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                   {% endfor %}
                 </div>
                 <div>
-                  <h4>Repetition statistics</h4>
+                  <h4>{{ L.repetition_statistics }}</h4>
                   <div class="table-wrap">
                     <table>
-                      <thead><tr><th>Side</th><th>Scores per repetition</th><th class="num">Variance</th></tr></thead>
+                      <thead><tr><th>{{ L.side }}</th><th>{{ L.scores_per_repetition }}</th><th class="num">{{ L.variance }}</th></tr></thead>
                       <tbody>
                         <tr>
                           <td>baseline</td>
@@ -825,7 +825,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="8" class="empty">No case was evaluated.</td></tr>
+          <tr><td colspan="8" class="empty">{{ L.no_case }}</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -843,7 +843,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         <span class="trace-case-sub">{{ case.task_type or '—' }} · {{ case.runs|length }} run(s)</span>
       </button>
       {% else %}
-      <p class="empty">No trace was recorded.</p>
+      <p class="empty">{{ L.no_trace_at_all }}</p>
       {% endfor %}
     </aside>
 
@@ -856,7 +856,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <span class="muted" style="font-size:12px">{{ case.task_type or 'unknown category' }} · {{ case.runs|length }} run(s)</span>
           </div>
 
-          <h3 style="margin-bottom:8px">Run</h3>
+          <h3 style="margin-bottom:8px">{{ L.run }}</h3>
           <div class="run-tabs">
             {% for run in case.runs %}
             <button class="chip" data-trace-run="{{ case.index }}-{{ loop.index0 }}" aria-pressed="{% if loop.first %}true{% else %}false{% endif %}">
@@ -871,8 +871,8 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
               <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status }}</span>
               <span class="badge">{{ run.run_id }}</span>
               <span class="muted">{{ run.variant }} · repetition {{ run.repetition }}</span>
-              {% if run.redacted %}<span class="badge badge-missing">redacted</span>{% endif %}
-              {% if run.trace_present %}<span class="badge">trace available</span>{% else %}<span class="badge badge-missing">no trace</span>{% endif %}
+              {% if run.redacted %}<span class="badge badge-missing">{{ L.redacted }}</span>{% endif %}
+              {% if run.trace_present %}<span class="badge">{{ L.trace_available }}</span>{% else %}<span class="badge badge-missing">{{ L.no_trace }}</span>{% endif %}
               {% if run.trace_event_types_collapsed %}
               <span class="badge" title="{{ run.trace_event_counts|json_compact }}">{{ run.trace_event_types_collapsed|join(', ') }} events collapsed</span>
               {% endif %}
@@ -883,9 +883,8 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             {% set denials = run.permission_denials or [] %}
             {% if denials %}
             <div class="error-box">
-              <strong>The runtime denied {{ denials|length }} tool call(s).</strong>
-              The agent was not allowed to perform them - that is not the same as the agent
-              choosing not to, and it can explain a missing output.
+              <strong>{{ L.denied_tool_calls.format(n=denials|length) }}</strong>
+              {{ L.denied_explanation }}
               <pre>{{ denials|json_compact }}</pre>
             </div>
             {% endif %}
@@ -910,10 +909,10 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
               {% endfor %}
             </ul>
             {% else %}
-            <p class="empty">No trace event was recorded for this run.</p>
+            <p class="empty">{{ L.no_trace_events }}</p>
             {% endif %}
             {% if run.capabilities %}
-            <h4 style="margin-top:12px">Capability evidence</h4>
+            <h4 style="margin-top:12px">{{ L.capability_evidence }}</h4>
             <ul class="evidence-list">
               {% for capability in run.capabilities %}
               <li><code>{{ capability.name }}</code> — {{ capability.status }}{% if capability.evidence %} ({{ capability.evidence }}){% endif %}</li>
@@ -925,12 +924,12 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         </article>
 
         <article class="card" style="margin-top:16px">
-          <h2>A/B execution path</h2>
-          <p class="muted" style="font-size:12px">Where the two variants took a different path through the case.</p>
+          <h2>{{ L.ab_execution_path }}</h2>
+          <p class="muted" style="font-size:12px">{{ L.ab_execution_path_hint }}</p>
           {% for diff in case.trace_diff %}
           <div style="margin-bottom:14px">
-            <h4>Repetition {{ diff.repetition }}
-              {% if diff.identical %}<span class="badge">identical path</span>{% else %}<span class="badge badge-missing">paths differ</span>{% endif %}
+            <h4>{{ L.repetition }} {{ diff.repetition }}
+              {% if diff.identical %}<span class="badge">{{ L.identical_path }}</span>{% else %}<span class="badge badge-missing">{{ L.paths_differ }}</span>{% endif %}
             </h4>
             <div class="path-diff">
               <div class="path-col">
@@ -955,7 +954,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         </article>
       </section>
       {% else %}
-      <article class="card"><p class="empty">No trace was recorded for this experiment.</p></article>
+      <article class="card"><p class="empty">{{ L.no_trace_at_all }}</p></article>
       {% endfor %}
     </div>
   </div>
@@ -965,52 +964,52 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
 <section id="tab-metadata" class="tab-panel" role="tabpanel" aria-labelledby="tabbtn-metadata" hidden>
   <div class="grid-2">
     <article class="card">
-      <h2>Runtime</h2>
+      <h2>{{ L.runtime_section }}</h2>
       <dl class="kv">
-        <dt>Runtime</dt><dd>{{ metadata.runtime or 'unknown' }} {{ metadata.runtime_version }}</dd>
-        <dt>Model</dt><dd>{{ metadata.model or 'n/a' }}{% if metadata.model_reported_by %} <span class="muted">(reported by {{ metadata.model_reported_by }})</span>{% endif %}</dd>
-        <dt>Seed control</dt><dd>{% if metadata.seed_supported %}supported{% else %}not supported — runs are not bit-reproducible{% endif %}</dd>
-        <dt>Seed</dt><dd class="tabular">{{ metadata.seed }}</dd>
-        <dt>Order policy</dt><dd>{{ metadata.order_policy }}</dd>
-        <dt>Repetitions</dt><dd>{{ metadata.repetitions }}</dd>
-        <dt>Run status</dt><dd>{% for status, count in metadata.run_statuses.items() %}{{ status }}: {{ count }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</dd>
+        <dt>{{ L.runtime_section }}</dt><dd>{{ metadata.runtime or 'unknown' }} {{ metadata.runtime_version }}</dd>
+        <dt>{{ L.model }}</dt><dd>{{ metadata.model or 'n/a' }}{% if metadata.model_reported_by %} <span class="muted">(reported by {{ metadata.model_reported_by }})</span>{% endif %}</dd>
+        <dt>{{ L.seed_control }}</dt><dd>{% if metadata.seed_supported %}{{ L.seed_supported }}{% else %}{{ L.seed_not_supported }}{% endif %}</dd>
+        <dt>{{ L.seed }}</dt><dd class="tabular">{{ metadata.seed }}</dd>
+        <dt>{{ L.order_policy }}</dt><dd>{{ metadata.order_policy }}</dd>
+        <dt>{{ L.repetitions }}</dt><dd>{{ metadata.repetitions }}</dd>
+        <dt>{{ L.run_status }}</dt><dd>{% for status, count in metadata.run_statuses.items() %}{{ status }}: {{ count }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</dd>
       </dl>
     </article>
 
     <article class="card">
-      <h2>Framework</h2>
+      <h2>{{ L.framework }}</h2>
       <dl class="kv">
-        <dt>cc-eval commit</dt><dd class="hash">{{ metadata.cc_eval_commit or 'unknown' }}</dd>
-        <dt>Config hash</dt><dd class="hash">{{ metadata.config_hash or 'n/a' }}</dd>
+        <dt>{{ L.cc_eval_commit }}</dt><dd class="hash">{{ metadata.cc_eval_commit or 'unknown' }}</dd>
+        <dt>{{ L.config_hash }}</dt><dd class="hash">{{ metadata.config_hash or 'n/a' }}</dd>
         {% for variant, fingerprint in metadata.framework_fingerprints.items() %}
-        <dt>Fingerprint · {{ variant }}</dt><dd class="hash">{{ fingerprint }}</dd>
+        <dt>{{ L.fingerprint }} · {{ variant }}</dt><dd class="hash">{{ fingerprint }}</dd>
         {% endfor %}
         {% for variant, commit in metadata.framework_commits.items() %}
-        <dt>Commit · {{ variant }}</dt><dd class="hash">{{ commit or 'n/a (directory snapshot)' }}</dd>
+        <dt>{{ L.commit }} · {{ variant }}</dt><dd class="hash">{{ commit or 'n/a (directory snapshot)' }}</dd>
         {% endfor %}
         {% for variant, dirty in metadata.framework_dirty.items() %}
-        <dt>Working tree · {{ variant }}</dt><dd>{{ 'dirty (uncommitted changes present)' if dirty else 'clean' }}</dd>
+        <dt>{{ L.working_tree }} · {{ variant }}</dt><dd>{{ L.dirty if dirty else L.clean }}</dd>
         {% endfor %}
-        <dt>Expected changes</dt><dd>{% for change in spec.expected_changes %}<div>{{ change }}</div>{% else %}<span class="muted">none declared</span>{% endfor %}</dd>
+        <dt>{{ L.expected_changes }}</dt><dd>{% for change in spec.expected_changes %}<div>{{ change }}</div>{% else %}<span class="muted">{{ L.none_declared }}</span>{% endfor %}</dd>
       </dl>
     </article>
 
     <article class="card">
-      <h2>Data &amp; evaluation</h2>
+      <h2>{{ L.data_and_evaluation }}</h2>
       <dl class="kv">
-        <dt>Dataset</dt><dd>{{ metadata.dataset_name or 'n/a' }}</dd>
-        <dt>Dataset version</dt><dd>{{ metadata.dataset_version or 'n/a' }}</dd>
-        <dt>Dataset hash</dt><dd class="hash">{{ metadata.dataset_hash or 'n/a' }}</dd>
-        <dt>Evaluator</dt><dd>{{ metadata.evaluator or 'n/a' }}</dd>
-        <dt>Evaluator version</dt><dd>{{ metadata.evaluator_version or 'n/a' }}</dd>
-        <dt>Primary metric</dt><dd>{{ metadata.primary_metric }} ({{ spec.decision_rules.direction }})</dd>
-        <dt>Missing data</dt><dd>{% if metadata.missing_data %}{{ metadata.missing_data|join(', ') }}{% else %}none reported{% endif %}</dd>
-        <dt>Redactions</dt><dd>{% if metadata.redaction_stats %}{{ metadata.redaction_stats|length }} kind(s) scrubbed{% else %}none{% endif %}</dd>
+        <dt>{{ L.dataset }}</dt><dd>{{ metadata.dataset_name or 'n/a' }}</dd>
+        <dt>{{ L.dataset_version }}</dt><dd>{{ metadata.dataset_version or 'n/a' }}</dd>
+        <dt>{{ L.dataset_hash }}</dt><dd class="hash">{{ metadata.dataset_hash or 'n/a' }}</dd>
+        <dt>{{ L.evaluator }}</dt><dd>{{ metadata.evaluator or 'n/a' }}</dd>
+        <dt>{{ L.evaluator_version }}</dt><dd>{{ metadata.evaluator_version or 'n/a' }}</dd>
+        <dt>{{ L.primary_metric }}</dt><dd>{{ metadata.primary_metric }} ({{ spec.decision_rules.direction }})</dd>
+        <dt>{{ L.missing_data }}</dt><dd>{% if metadata.missing_data %}{{ metadata.missing_data|join(', ') }}{% else %}{{ L.none_reported }}{% endif %}</dd>
+        <dt>{{ L.redactions }}</dt><dd>{% if metadata.redaction_stats %}{{ metadata.redaction_stats|length }} kind(s) scrubbed{% else %}{{ L.none }}{% endif %}</dd>
       </dl>
     </article>
 
     <article class="card">
-      <h2>Controls</h2>
+      <h2>{{ L.controls }}</h2>
       <dl class="kv">
         {% for key, value in metadata.controls.items() %}
         <dt>{{ key }}</dt><dd class="hash">{{ value|json_compact }}</dd>
@@ -1019,8 +1018,8 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
     </article>
 
     <article class="card">
-      <h2>Decision rules</h2>
-      <p class="muted" style="font-size:12px">Declared in the experiment file before the runs.</p>
+      <h2>{{ L.decision_rules }}</h2>
+      <p class="muted" style="font-size:12px">{{ L.decision_rules_hint }}</p>
       <dl class="kv">
         {% for key, value in metadata.decision_rules.items() %}
         <dt>{{ key }}</dt><dd class="hash">{{ value|json_compact }}</dd>
@@ -1029,7 +1028,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
     </article>
 
     <article class="card">
-      <h2>Environment</h2>
+      <h2>{{ L.environment }}</h2>
       <dl class="kv">
         {% for key, value in metadata.environment.items() %}
         <dt>{{ key }}</dt><dd class="hash">{{ value }}</dd>
@@ -1038,16 +1037,16 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
     </article>
 
     <article class="card">
-      <h2>Run ids</h2>
+      <h2>{{ L.run_ids }}</h2>
       <ul class="evidence-list">
-        {% for run_id in metadata.run_ids %}<li><code>{{ run_id }}</code></li>{% else %}<li class="muted">no run was recorded</li>{% endfor %}
+        {% for run_id in metadata.run_ids %}<li><code>{{ run_id }}</code></li>{% else %}<li class="muted">{{ L.no_run_recorded }}</li>{% endfor %}
       </ul>
     </article>
 
     <article class="card">
-      <h2>Confounds</h2>
+      <h2>{{ L.confounds }}</h2>
       {% if metadata.confound_free %}
-      <p class="muted" style="font-size:13px">No blocking confound was detected.</p>
+      <p class="muted" style="font-size:13px">{{ L.no_confound }}</p>
       {% else %}
       <ul class="notes">
         {% for confound in metadata.confounds %}

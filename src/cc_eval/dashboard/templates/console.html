@@ -270,6 +270,12 @@ details summary { cursor: pointer; color: var(--ink-2); }
     options.credentials = "same-origin";
     return fetch(path, options).then(function (response) {
       return response.json().catch(function () { return {}; }).then(function (data) {
+        if (response.status === 401) {
+          // The session is gone (server restarted, or the cookie expired).
+          // Say so instead of silently showing an empty page.
+          if (!path.endsWith("/api/login")) { showLogin("会话已失效,请重新登录"); }
+          throw new Error("not authenticated");
+        }
         if (!response.ok) { throw new Error(data.error || ("HTTP " + response.status)); }
         return data;
       });
@@ -277,9 +283,10 @@ details summary { cursor: pointer; color: var(--ink-2); }
   }
 
   // ----------------------------------------------------------------- auth --
-  function showLogin() {
+  function showLogin(message) {
     $("login").hidden = false;
     $("app").hidden = true;
+    if (message) { $("login-error").textContent = message; }
     $("token").focus();
   }
   function showApp(role, publicUrl) {
@@ -348,6 +355,10 @@ details summary { cursor: pointer; color: var(--ink-2); }
       state.cases = data.cases;
       renderCasePicker();
       renderCaseTable();
+    }).catch(function (err) {
+      if (err.message !== "not authenticated") {
+        $("run-error").textContent = "加载用例失败:" + err.message;
+      }
     });
   }
   function renderCasePicker() {
@@ -567,8 +578,23 @@ details summary { cursor: pointer; color: var(--ink-2); }
           el("td", {}, [link])
         ]));
       });
+    }).catch(function (err) {
+      if (err.message !== "not authenticated") {
+        $("run-error").textContent = "加载历史失败:" + err.message;
+      }
     });
   }
+
+  // ------------------------------------------------------- auto refresh -- --
+  // Cases and experiments can be created from another tab or from the CLI,
+  // so the page refreshes when it regains focus.  No manual reload needed.
+  window.addEventListener("focus", function () {
+    if (document.hidden) { return; }
+    if (state.type) { loadCases(); }
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && state.type) { loadCases(); }
+  });
 
   // ------------------------------------------------------------------ boot --
   api("/api/session").then(function (data) {

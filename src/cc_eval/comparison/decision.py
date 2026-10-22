@@ -32,6 +32,8 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
     if aggregate is None:
         decision.verdict = Verdict.INCONCLUSIVE
         decision.reason = f"the primary metric {primary!r} was not produced by any run"
+        decision.reason_code = "reason.metric_missing"
+        decision.reason_params = {"metric": primary}
         return decision
 
     decision.baseline_value = aggregate.baseline
@@ -47,19 +49,25 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
 
     if capability_blockers:
         decision.verdict = Verdict.INVALID
+        details = "; ".join(c.detail for c in capability_blockers)
         decision.reason = (
             "the framework capability under test could not be shown to have been used: "
-            + "; ".join(c.detail for c in capability_blockers)
+            + details
         )
+        decision.reason_code = "reason.capability_blocked"
+        decision.reason_params = {"details": details}
         return decision
 
     if other_blockers and rules.require_confound_free:
         decision.verdict = Verdict.INVALID
+        details = "; ".join(c.detail for c in other_blockers)
         decision.reason = (
             "confounding variables were detected, so the difference cannot be attributed "
             "to the independent variable: "
-            + "; ".join(c.detail for c in other_blockers)
+            + details
         )
+        decision.reason_code = "reason.confounded"
+        decision.reason_params = {"details": details}
         return decision
 
     # -- 2. repetitions ------------------------------------------------------ #
@@ -75,6 +83,8 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
             f"only {actual_reps} repetition(s) per variant were run; "
             f"the rules require at least {rules.min_repetitions}"
         )
+        decision.reason_code = "reason.too_few_repetitions"
+        decision.reason_params = {"actual": actual_reps, "required": rules.min_repetitions}
         return decision
 
     # -- 3. effect size ----------------------------------------------------- #
@@ -82,6 +92,8 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
     if delta is None:
         decision.verdict = Verdict.INCONCLUSIVE
         decision.reason = f"the primary metric {primary!r} is missing on one of the sides"
+        decision.reason_code = "reason.delta_missing"
+        decision.reason_params = {"metric": primary}
         return decision
 
     if rules.direction == "higher_is_better":
@@ -97,6 +109,12 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
             f"{primary} changed by {delta:+.4f}, which is below the pre-declared "
             f"minimum effect size of {rules.min_delta:+.4f}"
         )
+        decision.reason_code = "reason.below_min_delta"
+        decision.reason_params = {
+            "metric": primary,
+            "delta": delta,
+            "min_delta": rules.min_delta,
+        }
         return decision
 
     # -- 4. case regressions ------------------------------------------------ #
@@ -113,17 +131,27 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
     )
     if too_many or rate_exceeded:
         decision.verdict = Verdict.INCONCLUSIVE
+        rate_clause = (
+            f"and a regression rate of {rules.max_regression_rate:.0%}. "
+            if rules.max_regression_rate is not None
+            else ". "
+        )
         decision.reason = (
             f"{primary} moved by {delta:+.4f} but {len(regressed)} case(s) regressed "
             f"({regression_rate:.0%} of cases); the rules allow at most "
             f"{rules.max_regressed_cases} "
-            + (
-                f"and a regression rate of {rules.max_regression_rate:.0%}. "
-                if rules.max_regression_rate is not None
-                else ". "
-            )
+            + rate_clause
             + "See the per-case table before accepting this change."
         )
+        decision.reason_code = "reason.too_many_regressions"
+        decision.reason_params = {
+            "metric": primary,
+            "delta": delta,
+            "count": len(regressed),
+            "rate": regression_rate,
+            "allowed": rules.max_regressed_cases,
+            "rate_clause": rate_clause,
+        }
         return decision
 
     if guard_regressions:
@@ -135,6 +163,13 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
             f"{primary} moved by {delta:+.4f} but {len(guard_regressions)} case(s) "
             f"regressed on a guard metric: {details}"
         )
+        decision.reason_code = "reason.guard_regression"
+        decision.reason_params = {
+            "metric": primary,
+            "delta": delta,
+            "count": len(guard_regressions),
+            "details": details,
+        }
         return decision
 
     # -- 5. guard metrics --------------------------------------------------- #
@@ -157,6 +192,15 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
                 + "A change that improves one metric while degrading another is not an "
                 "unambiguous improvement."
             )
+            decision.reason_code = "reason.guard_metric"
+            decision.reason_params = {
+                "metric": primary,
+                "delta": delta,
+                "guard": guard,
+                "guard_delta": guard_aggregate.delta,
+                "guard_baseline": guard_aggregate.baseline,
+                "guard_candidate": guard_aggregate.candidate,
+            }
             return decision
 
     # -- 6. confidence ------------------------------------------------------ #
@@ -167,6 +211,14 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
             f"confidence interval [{aggregate.ci_low:+.4f}, {aggregate.ci_high:+.4f}] "
             "includes zero"
         )
+        decision.reason_code = "reason.ci_includes_zero"
+        decision.reason_params = {
+            "metric": primary,
+            "delta": delta,
+            "alpha": int(rules.confidence.alpha * 100),
+            "low": aggregate.ci_low,
+            "high": aggregate.ci_high,
+        }
         return decision
 
     # -- 7. verdict --------------------------------------------------------- #
@@ -177,19 +229,36 @@ def apply_decision_rules(spec: ExperimentSpec, report: ComparisonReport) -> Deci
             f"({aggregate.baseline:.4f} -> {aggregate.candidate:.4f}) with no blocked "
             "confound and no disallowed case regression"
         )
+        decision.reason_code = "reason.improved"
+        decision.reason_params = {
+            "metric": primary,
+            "delta": delta,
+            "baseline": aggregate.baseline,
+            "candidate": aggregate.candidate,
+        }
     elif worsened:
         decision.verdict = Verdict.REGRESSED
         decision.reason = (
             f"{primary} regressed by {delta:+.4f} "
             f"({aggregate.baseline:.4f} -> {aggregate.candidate:.4f})"
         )
+        decision.reason_code = "reason.regressed"
+        decision.reason_params = {
+            "metric": primary,
+            "delta": delta,
+            "baseline": aggregate.baseline,
+            "candidate": aggregate.candidate,
+        }
     else:  # pragma: no cover - delta == 0 is caught by the min_delta gate
         decision.verdict = Verdict.INCONCLUSIVE
         decision.reason = f"{primary} did not change"
+        decision.reason_code = "reason.no_change"
+        decision.reason_params = {"metric": primary}
 
     if other_blockers:
-        decision.notes = (
-            "non-blocking confounds were recorded: "
-            + "; ".join(c.detail for c in other_blockers)
-        )
+        details = "; ".join(c.detail for c in other_blockers)
+        decision.notes = ("non-blocking confounds were recorded: " + details)
+        decision.notes_codes = [
+            {"code": "note.non_blocking_confounds", "params": {"details": details}}
+        ]
     return decision
