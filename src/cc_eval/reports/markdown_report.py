@@ -12,6 +12,8 @@ The report deliberately does **not** stop at an average.  It shows:
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..core.models import ComparisonReport, ExperimentSpec
 from .i18n import Translator, resolve_language
 
@@ -51,6 +53,21 @@ def _metric_display(metric: str, language: str = "zh") -> str:
     return metric_label(metric, language)
 
 
+def _resolve_notes(case: Any, translator: Translator) -> list[str]:
+    """The notes of a case, in the reader's language."""
+    resolved = []
+    for index, note in enumerate(case.notes):
+        codes = getattr(case, "note_codes", []) or []
+        code = codes[index] if index < len(codes) else None
+        if code:
+            resolved.append(
+                translator.m(code.get("code", ""), **(code.get("params") or {})) or note
+            )
+        else:
+            resolved.append(note)
+    return resolved
+
+
 def render_markdown(
     report: ComparisonReport,
     spec: ExperimentSpec | None = None,
@@ -61,6 +78,22 @@ def render_markdown(
     labels = _VERDICT_LABEL_ZH if translator.language == "zh" else _VERDICT_LABEL
     lines: list[str] = []
     decision = report.decision
+
+    # The confound details first: the verdict reason quotes them.
+    confound_details = [
+        translator.m(c.code, **(c.params or {})) or c.detail for c in report.confounds
+    ]
+    reason_params = dict(decision.reason_params)
+    if decision.reason_code in {"reason.capability_blocked", "reason.confounded"}:
+        want_capability = decision.reason_code == "reason.capability_blocked"
+        details = [
+            detail
+            for confound, detail in zip(report.confounds, confound_details)
+            if (confound.kind == "capability_unverified") == want_capability
+        ]
+        if details:
+            reason_params["details"] = "; ".join(details)
+    reason = translator.m(decision.reason_code, **reason_params) or decision.reason
 
     lines.append(f"# cc-eval 报告 · {report.experiment_id}")
     lines.append("")
@@ -79,7 +112,7 @@ def render_markdown(
     lines.append(f"**{'结论' if translator.language == 'zh' else 'Verdict'}: {labels.get(decision.verdict.value, decision.verdict.value)}**")
     lines.append("")
     if decision.reason:
-        lines.append(f"> {decision.reason}")
+        lines.append(f"> {reason}")
         lines.append("")
 
     # -- provenance ---------------------------------------------------------- #
@@ -128,7 +161,7 @@ def render_markdown(
     lines.append("| 用例 | 基线 | 候选 | 差值 | 状态 | 退化指标 | 备注 |")
     lines.append("|---|---:|---:|---:|---|---|---|")
     for case in report.cases:
-        notes = "; ".join(case.notes) if case.notes else ""
+        notes = "; ".join(_resolve_notes(case, translator)) if case.notes else ""
         regressed_on = ", ".join(case.regressed_metrics) if case.regressed_metrics else "-"
         lines.append(
             f"| {case.case_id} | {_fmt(case.baseline_score)} | {_fmt(case.candidate_score)} | "
@@ -192,14 +225,14 @@ def render_markdown(
     else:
         lines.append("| 严重度 | 类型 | 详情 |")
         lines.append("|---|---|---|")
-        for confound in report.confounds:
-            lines.append(f"| {confound.severity} | {confound.kind} | {confound.detail} |")
+        for confound, detail in zip(report.confounds, confound_details):
+            lines.append(f"| {confound.severity} | {confound.kind} | {detail} |")
     lines.append("")
 
     # -- verdict ------------------------------------------------------------- #
     lines.append("## 结论")
     lines.append("")
-    lines.append(f"**{labels.get(decision.verdict.value, decision.verdict.value)}** - {decision.reason}")
+    lines.append(f"**{labels.get(decision.verdict.value, decision.verdict.value)}** - {reason}")
     lines.append("")
     if spec is not None:
         lines.append(

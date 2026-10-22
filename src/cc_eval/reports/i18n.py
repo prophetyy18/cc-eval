@@ -567,13 +567,21 @@ class Translator:
         return text.format(**params) if params else text
 
     def m(self, code: str, **params: Any) -> str | None:
-        """An engine message, or ``None`` when the code is unknown."""
+        """An engine message, or ``None`` when the code is unknown.
+
+        A parameter whose value is itself a message code is resolved first,
+        so a message can be composed of other messages.
+        """
         entry = MESSAGES.get(code)
         if entry is None:
             return None
+        resolved = {
+            key: (self.m(value) if isinstance(value, str) and value in MESSAGES else value)
+            for key, value in params.items()
+        }
         text = entry.get(self.language) or entry.get("en") or code
         try:
-            return text.format(**params)
+            return text.format(**resolved)
         except (KeyError, IndexError):  # pragma: no cover - defensive
             return text
 

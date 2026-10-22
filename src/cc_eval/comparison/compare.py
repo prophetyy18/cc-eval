@@ -458,7 +458,13 @@ def _detect_capability_confounds(spec: ExperimentSpec, records: list[RunRecord])
                         "name": name,
                         "variant": variant.name,
                         "status": status,
-                        "extra": extra,
+                        # A message code, resolved by the renderer: the
+                        # sentence has to be in the reader's language too.
+                        "extra": (
+                            "confound.capability_required"
+                            if required_here
+                            else "confound.capability_optional"
+                        ),
                     },
                 )
             )
