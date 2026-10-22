@@ -67,6 +67,7 @@ cc-eval benchmark validate benchmarks/suite    # check the dataset
 cc-eval run EXP-001 --runner fake --file experiments/EXP-001.yaml
 cc-eval compare EXP-001 --file experiments/EXP-001.yaml
 cc-eval report EXP-001 --file experiments/EXP-001.yaml
+xdg-open .cc-eval/reports/EXP-001/report.html  # the interactive report
 ```
 
 The three example experiments in `experiments/` run against the miniature
@@ -92,11 +93,12 @@ specification review started inventing defects.  The report names the case.
 | `cc-eval experiment list` / `show` | inspect experiments and their verdicts |
 | `cc-eval experiment accept EXP-001` | record a human acceptance in the registry (changes nothing else) |
 | `cc-eval experiment rollback EXP-001` | show which framework commit to roll back to (never touches git) |
-| `cc-eval run EXP-001 --runner fake\|claude\|codex` | execute the experiment |
+| `cc-eval run EXP-001 --runner fake\|claude\|codex` | execute the experiment (writes the HTML report) |
 | `cc-eval compare EXP-001` | recompute the comparison from the stored runs |
-| `cc-eval report EXP-001 [--format md\|json\|both]` | render the report |
+| `cc-eval report EXP-001 [--format html\|md\|json\|both\|all]` | render the report (HTML by default) |
+| `cc-eval render EXP-001 [--format html]` | re-render the report from the stored runs, without running anything |
 | `cc-eval benchmark validate PATH` | check a dataset's structure, ground truth and hashes |
-| `cc-eval registry list` / `show` | inspect the recorded history |
+| `cc-eval registry list` / `show` / `reports` | inspect the recorded history and the reports it links to |
 | `cc-eval runner list` | probe which runtimes are usable on this machine |
 
 Useful `run` options: `--case ID` (run a subset), `--repetitions N`,
@@ -174,10 +176,80 @@ materialises a detached worktree instead of a directory copy.
 
 ### The report
 
+`cc-eval run` writes the report automatically:
+
+```
+.cc-eval/reports/EXP-001/
+    report.html    interactive dashboard - open it in a browser
+    report.json    the same data, machine readable
+    report.md      the plain-text report
+```
+
+**Open the HTML report with any browser - no server, no network, no
+dependencies:**
+
+```bash
+xdg-open .cc-eval/reports/EXP-001/report.html     # Linux
+open .cc-eval/reports/EXP-001/report.html         # macOS
+start .cc-eval\reports\EXP-001\report.html        # Windows
+```
+
+The page has four tabs:
+
+| Tab | What it answers |
+|---|---|
+| **Overview** | what is the conclusion, what is the evidence, what does the data *not* support, how did the metrics, the tokens and the cost move |
+| **Cases** | which cases improved, which regressed, what changed in them - filter by movement, search by case id / category / tag, expand a case for both outputs, the scoring evidence and the failure reason |
+| **Traces** | the execution path of every run, per case and per repetition, with the A/B path difference |
+| **Metadata** | runtime, model, commits, fingerprints, config hash, dataset and evaluator versions, controls, decision rules, run ids, environment |
+
+The report never invents a number: it is rendered from the same
+`ReportModel` that produces `report.json`, so the two cannot drift.  A
+missing value is shown as **n/a**, never as zero, and an experiment that did
+not finish is marked **incomplete** instead of being presented as a success.
+
 The Markdown report contains the metric table with the confidence interval,
 the **per-case** table (which cases improved, which regressed, which metrics
 they regressed on), the run-to-run variation, the cost and time movement, the
 confound analysis, and the verdict with the exact rule that produced it.
+
+#### Re-rendering without running the experiment
+
+```bash
+cc-eval render EXP-001                    # HTML only, from the stored runs
+cc-eval render EXP-001 --format all       # HTML + JSON + Markdown
+cc-eval report EXP-001 --format html --output /tmp/report.html
+```
+
+#### Customising the HTML report
+
+The template is a single Jinja2 file:
+
+```
+src/cc_eval/reports/templates/report.html.j2
+```
+
+Copy it, edit it and point cc-eval at your copy - no code change needed:
+
+```bash
+cp src/cc_eval/reports/templates/report.html.j2 ~/.cc-eval/my-report.html.j2
+$EDITOR ~/.cc-eval/my-report.html.j2
+
+cc-eval render EXP-001 --template ~/.cc-eval/my-report.html.j2
+```
+
+The same path can be set permanently:
+
+```bash
+export CC_EVAL_HTML_TEMPLATE=~/.cc-eval/my-report.html.j2
+```
+
+The template receives the `ReportModel` (`report`), the experiment
+specification (`spec`), the comparison (`comparison`), the per-case view
+models (`case_views`), the metadata (`metadata`), the metric cards with their
+inline SVG charts (`metric_cards`) and the movement summary (`movement`).
+Agent output is escaped by Jinja2; `{{ value | safe }}` is only for markup
+cc-eval itself generated.
 
 ---
 
@@ -264,6 +336,7 @@ Layout:
 
 ```
 src/cc_eval/       core/ runners/ evaluators/ datasets/ traces/ comparison/ reports/ isolation/ cli/
+                  reports/templates/report.html.j2   the HTML report template
 benchmarks/        intent/ spec/ cross_module/ requirements/ suite/
 experiments/       EXP-001.yaml EXP-002.yaml EXP-003.yaml
 examples/framework/ baseline/ candidate/ candidate_aggressive/ spec-review-only/

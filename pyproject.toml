@@ -21,6 +21,7 @@ dependencies = [
   "pydantic>=2.7,<3",
   "typer>=0.12,<1",
   "PyYAML>=6.0,<7",
+  "Jinja2>=3.1,<4",
 ]
 
 [project.optional-dependencies]
@@ -45,7 +46,7 @@ Homepage = "https://github.com/example/cc-eval"
 where = ["src"]
 
 [tool.setuptools.package-data]
-cc_eval = ["py.typed", "resources/*.yaml"]
+cc_eval = ["py.typed", "resources/*.yaml", "reports/templates/*.j2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

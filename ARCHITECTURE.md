@@ -28,7 +28,7 @@ what changed - including the cases where the claim does not hold.
                          │   └─ rule-derived verdict                 │
                          └───────────────┬──────────────────────────┘
                                          ▼
-                          report (Markdown + JSON) + registry
+                          report (HTML + JSON + Markdown) + registry
 ```
 
 ## Layers
@@ -45,7 +45,7 @@ what changed - including the cases where the claim does not hold.
 | `evaluators/` | deterministic matching, rubrics, the optional judge | `core.models` |
 | `traces/` | normalise runtime events, store raw and normalised traces | `core.models` |
 | `comparison/` | aggregation, statistics, confound detection, verdict | `core.models`, `core.experiment` |
-| `reports/` | render the JSON and Markdown reports | `core.models` |
+| `reports/` | render the HTML, JSON and Markdown reports from the report model | `core.models` |
 | `isolation/` | workspace guards, subprocess budgets, redaction | `core.config` |
 | `cli/` | the Typer application | everything |
 

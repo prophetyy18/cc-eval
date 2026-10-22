@@ -3,6 +3,14 @@
 The JSON report is the machine-readable half of the deliverable: it contains
 the full comparison plus the metadata needed to reproduce it (dataset hash,
 evaluator version, framework fingerprints, decision rules snapshot).
+
+Two shapes exist:
+
+* :func:`build_payload` - the legacy payload built from a
+  :class:`~cc_eval.core.models.ComparisonReport`.  Kept for compatibility.
+* :func:`build_model_payload` - the payload of the full
+  :class:`~cc_eval.reports.model.ReportModel`.  This is what ``report.json``
+  contains and it is the input the HTML renderer can be replayed from.
 """
 
 from __future__ import annotations
@@ -12,6 +20,12 @@ from pathlib import Path
 from typing import Any
 
 from ..core.models import ComparisonReport, ExperimentSpec
+from .model import ReportModel
+
+
+def build_model_payload(model: ReportModel) -> dict[str, Any]:
+    """The JSON payload of a report model."""
+    return model.to_payload()
 
 
 def build_payload(
@@ -60,4 +74,15 @@ def write_json(
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_json(report, spec, extra), encoding="utf-8")
+    return target
+
+
+def write_model_json(model: ReportModel, path: Path | str) -> Path:
+    """Write the full report model as JSON."""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps(build_model_payload(model), ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
+    )
     return target

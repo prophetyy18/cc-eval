@@ -89,9 +89,22 @@ class Registry:
         dataset: str = "",
         dataset_version: str = "",
         status: str = "created",
+        reports: dict[str, str] | None = None,
     ) -> None:
-        """Add or update the index entry for an experiment."""
-        entries = [e for e in _read_jsonl(self.index) if e.get("experiment_id") != experiment_id]
+        """Add or update the index entry for an experiment.
+
+        ``reports`` links the experiment to the report files that were
+        generated for it (the HTML report, the JSON report, ...).  It is what
+        makes the history of an experiment navigable later.
+        """
+        existing = _read_jsonl(self.index)
+        previous = next(
+            (e for e in existing if e.get("experiment_id") == experiment_id),
+            None,
+        )
+        entries = [e for e in existing if e.get("experiment_id") != experiment_id]
+        known_reports: dict[str, str] = dict((previous or {}).get("reports") or {})
+        known_reports.update(reports or {})
         entries.append(
             {
                 "experiment_id": experiment_id,
@@ -103,6 +116,7 @@ class Registry:
                 "dataset": dataset,
                 "dataset_version": dataset_version,
                 "status": status,
+                "reports": known_reports,
                 "updated_at": _now(),
             }
         )
@@ -168,6 +182,37 @@ class Registry:
     # -- reads -------------------------------------------------------------- #
     def list_experiments(self) -> list[dict[str, Any]]:
         return _read_jsonl(self.index)
+
+    def list_reports(self) -> list[dict[str, Any]]:
+        """The generated reports of every experiment, newest entry last.
+
+        This is the link between the registry and the report files: it is what
+        a future history view (or a web UI) would walk to compare one
+        experiment with the next.
+        """
+        reports: list[dict[str, Any]] = []
+        for entry in _read_jsonl(self.index):
+            experiment_id = str(entry.get("experiment_id", ""))
+            decision = self.latest_decision(experiment_id)
+            reports.append(
+                {
+                    "experiment_id": experiment_id,
+                    "title": entry.get("title", ""),
+                    "status": entry.get("status", ""),
+                    "dataset_version": entry.get("dataset_version", ""),
+                    "verdict": decision.verdict.value if decision else "",
+                    "reports": dict(entry.get("reports") or {}),
+                    "updated_at": entry.get("updated_at", ""),
+                }
+            )
+        return reports
+
+    def reports_for(self, experiment_id: str) -> dict[str, str]:
+        """The report files recorded for one experiment."""
+        for entry in _read_jsonl(self.index):
+            if entry.get("experiment_id") == experiment_id:
+                return dict(entry.get("reports") or {})
+        return {}
 
     def history(self, experiment_id: str) -> dict[str, Any]:
         directory = self.experiment_dir(experiment_id)

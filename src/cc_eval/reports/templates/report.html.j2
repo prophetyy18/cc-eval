@@ -1,0 +1,1227 @@
+{#
+  cc-eval HTML report template.
+
+  Copy this file, edit it and point CC_EVAL_HTML_TEMPLATE (or
+  `cc-eval report --template`) at your copy to restyle the report.
+
+  The template receives:
+    report         the ReportModel
+    spec           the experiment specification
+    comparison     the ComparisonReport (metrics, cases, confounds, decision)
+    case_views     per-case view models (index + delta_svg)
+    metadata       provenance and metadata
+    metric_cards   one entry per metric (values + inline SVG chart)
+    primary_card   the primary metric card
+    movement       improved / regressed / unchanged / unknown groups
+    totals         token / cost / duration cards
+    trace_diff_rows  per-case A/B execution path comparison
+    data_json      the full report payload, escaped for a <script> block
+#}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ spec.id }} · cc-eval report</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+  --success-text: #006300;
+  --wash: rgba(11,11,11,0.035);
+  --shadow: 0 1px 2px rgba(11,11,11,.04), 0 10px 30px rgba(11,11,11,.04);
+  --radius: 12px;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --plane: #0d0d0d;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --success-text: #0ca30c;
+    --wash: rgba(255,255,255,0.04);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --plane: #0d0d0d;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255,255,255,0.10);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --success-text: #0ca30c;
+  --wash: rgba(255,255,255,0.04);
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.3);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--plane);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 18px; }
+h2 { font-size: 15px; }
+h3 { font-size: 14px; }
+h4 { font-size: 13px; color: var(--ink-2); }
+p { margin: 0 0 8px; }
+a { color: var(--series-1); }
+code, pre { font-family: var(--mono); font-size: 12px; }
+pre {
+  background: var(--wash);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 0;
+  max-height: 320px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.muted { color: var(--muted); }
+.secondary { color: var(--ink-2); }
+.nowrap { white-space: nowrap; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-inner {
+  max-width: 1240px; margin: 0 auto; padding: 12px 20px;
+  display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+}
+.brand { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.brand .brand-name { font-weight: 600; white-space: nowrap; }
+.brand .brand-id {
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+}
+.topbar-meta { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.meta-item { font-size: 12px; color: var(--ink-2); }
+.meta-item .meta-label { color: var(--muted); }
+
+/* ---------- pills ---------- */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 999px; padding: 3px 10px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--wash); color: var(--ink);
+}
+.pill-good { border-color: var(--status-good); }
+.pill-critical { border-color: var(--status-critical); }
+.pill-warning { border-color: var(--status-warning); }
+.pill-serious { border-color: var(--status-serious); }
+.pill .pill-icon { font-size: 11px; line-height: 1; }
+
+/* ---------- tabs ---------- */
+.tabs {
+  position: sticky; top: 0; z-index: 19;
+  background: var(--plane);
+  border-bottom: 1px solid var(--border);
+}
+.tabs-inner { max-width: 1240px; margin: 0 auto; padding: 0 20px; display: flex; gap: 4px; }
+.tab-button {
+  appearance: none; background: none; border: 0; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 500; color: var(--ink-2);
+  padding: 10px 12px; border-bottom: 2px solid transparent;
+}
+.tab-button:hover { color: var(--ink); }
+.tab-button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+.tab-count { color: var(--muted); font-weight: 400; margin-left: 4px; }
+
+main { max-width: 1240px; margin: 0 auto; padding: 20px; }
+.tab-panel[hidden] { display: none; }
+.tab-panel { display: flex; flex-direction: column; gap: 16px; }
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.card > h2 { margin-bottom: 10px; }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.card-head h2 { margin: 0; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+/* ---------- banner ---------- */
+.banner {
+  display: flex; gap: 12px; align-items: flex-start;
+  border-radius: var(--radius); padding: 12px 16px;
+  border: 1px solid var(--status-warning);
+  background: var(--surface-1);
+}
+.banner-failed { border-color: var(--status-critical); }
+.banner-icon { font-weight: 700; line-height: 1.4; }
+.banner p { margin: 2px 0 0; color: var(--ink-2); }
+
+/* ---------- verdict ---------- */
+.verdict-line { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.verdict-word { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
+.verdict-improved { color: var(--success-text); }
+.verdict-regressed { color: var(--status-critical); }
+.verdict-inconclusive { color: var(--ink); }
+.verdict-invalid { color: var(--status-serious); }
+.verdict-reason { color: var(--ink-2); }
+.evidence { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.evidence li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
+.evidence .evidence-key { color: var(--muted); min-width: 132px; }
+
+/* ---------- definition lists ---------- */
+dl.kv { margin: 0; display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 6px 16px; }
+dl.kv dt { color: var(--muted); font-size: 12px; }
+dl.kv dd { margin: 0; font-size: 13px; word-break: break-word; }
+
+/* ---------- tiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.tile {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+}
+.tile-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.tile-value { display: block; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.tile-value .tile-from { font-size: 14px; color: var(--ink-2); font-weight: 500; }
+.tile-foot { display: block; font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+.delta-good { color: var(--success-text); }
+.delta-bad { color: var(--status-critical); }
+
+/* ---------- charts ---------- */
+.legend { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.chart-card {
+  margin: 0; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px 10px;
+}
+.chart-card figcaption { display: flex; flex-direction: column; gap: 1px; margin-bottom: 4px; }
+.chart-title { font-weight: 600; font-size: 13px; }
+.chart-sub { font-size: 11px; color: var(--muted); }
+.chart-foot { font-size: 12px; color: var(--ink-2); margin: 4px 0 0; }
+.mini-chart { width: 100%; height: auto; display: block; }
+.mini-chart .axis { stroke: var(--axis); stroke-width: 1; }
+.mini-chart .bar { stroke: none; }
+.mini-chart .bar-value { fill: var(--ink-2); font-size: 11px; font-family: system-ui, sans-serif; }
+.mini-chart .chart-note { fill: var(--muted); font-size: 10px; font-family: system-ui, sans-serif; }
+.delta-bar { width: 90px; height: 12px; vertical-align: middle; }
+.delta-bar .axis { stroke: var(--axis); stroke-width: 1; }
+
+/* ---------- tables ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--ink); }
+th .sort-caret { opacity: .45; margin-left: 4px; }
+tbody tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+
+/* ---------- movement ---------- */
+.movement-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.movement-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--wash); }
+.movement-head { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 6px; }
+.movement-count { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.movement-list { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 12px; }
+.movement-list li { margin-bottom: 2px; }
+.icon-good { color: var(--status-good); }
+.icon-critical { color: var(--status-critical); }
+.icon-warning { color: var(--status-warning); }
+.icon-serious { color: var(--status-serious); }
+.icon-neutral { color: var(--muted); }
+
+/* ---------- filters ---------- */
+.filter-row {
+  display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px;
+}
+.filter-row input[type="search"] {
+  font: inherit; font-size: 13px; padding: 6px 10px; min-width: 260px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-1); color: var(--ink);
+}
+.filter-row input[type="search"]:focus { outline: 2px solid var(--series-1); outline-offset: 1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  appearance: none; font: inherit; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface-1); color: var(--ink-2);
+  padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;
+}
+.chip:hover { color: var(--ink); border-color: var(--axis); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface-1); }
+.chip .chip-count { font-variant-numeric: tabular-nums; opacity: .8; }
+.filter-count { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+/* ---------- case table ---------- */
+.case-row { cursor: pointer; }
+.case-row:hover { background: var(--wash); }
+.case-row.is-open { background: var(--wash); }
+.case-id { font-family: var(--mono); font-size: 12px; }
+.chevron { display: inline-block; width: 12px; color: var(--muted); transition: transform .12s ease; }
+.case-row.is-open .chevron { transform: rotate(90deg); }
+.tag {
+  display: inline-block; font-size: 11px; color: var(--ink-2);
+  border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; margin-right: 3px;
+}
+.status-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+.case-detail > td { background: var(--plane); padding: 0; }
+.detail-inner { padding: 14px 16px; display: grid; gap: 14px; }
+.detail-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.detail-side { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface-1); }
+.detail-side h4 { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.detail-run { border-top: 1px solid var(--grid); padding-top: 10px; margin-top: 10px; }
+.detail-run:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.run-title { font-size: 12px; color: var(--ink-2); margin-bottom: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.kv-inline { display: grid; grid-template-columns: minmax(96px, 150px) 1fr; gap: 2px 10px; font-size: 12px; margin-bottom: 8px; }
+.kv-inline dt { color: var(--muted); overflow-wrap: anywhere; }
+.kv-inline dd { margin: 0; word-break: break-word; }
+.evidence-list { margin: 0; padding-left: 16px; font-size: 12px; color: var(--ink-2); }
+.notes { margin: 0; padding-left: 16px; font-size: 12px; color: var(--ink-2); }
+.error-box {
+  border-left: 3px solid var(--status-critical); background: var(--wash);
+  padding: 6px 10px; border-radius: 0 6px 6px 0; font-size: 12px; margin-top: 8px;
+}
+.missing-box {
+  border-left: 3px solid var(--status-warning); background: var(--wash);
+  padding: 6px 10px; border-radius: 0 6px 6px 0; font-size: 12px; margin-top: 8px; color: var(--ink-2);
+}
+
+/* ---------- traces ---------- */
+.trace-layout { display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: start; }
+.trace-side { display: flex; flex-direction: column; gap: 4px; }
+.trace-case-btn {
+  appearance: none; font: inherit; text-align: left; cursor: pointer;
+  border: 1px solid transparent; border-radius: 8px; background: none; color: var(--ink-2);
+  padding: 6px 8px; display: flex; flex-direction: column; gap: 2px;
+}
+.trace-case-btn:hover { background: var(--wash); color: var(--ink); }
+.trace-case-btn[aria-selected="true"] { background: var(--surface-1); border-color: var(--border); color: var(--ink); }
+.trace-case-id { font-family: var(--mono); font-size: 12px; }
+.trace-case-sub { font-size: 11px; color: var(--muted); }
+.run-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline li {
+  display: grid; grid-template-columns: 42px 120px 1fr auto; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 12px; align-items: baseline;
+}
+.timeline li:last-child { border-bottom: 0; }
+.timeline .seq { color: var(--muted); font-variant-numeric: tabular-nums; }
+.timeline .event-type { color: var(--ink-2); font-family: var(--mono); font-size: 11px; }
+.timeline .event-name { font-weight: 500; word-break: break-word; }
+.timeline .event-detail { color: var(--muted); font-size: 11px; }
+.timeline .event-error { color: var(--status-critical); font-size: 11px; word-break: break-word; }
+.badge {
+  display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 5px;
+  border: 1px solid var(--border); color: var(--ink-2); background: var(--wash);
+}
+.badge-ok { border-color: var(--status-good); }
+.badge-error { border-color: var(--status-critical); }
+.badge-missing { border-color: var(--status-warning); }
+.path-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.path-col { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface-1); }
+.path-steps { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 11px; }
+.path-steps li { padding: 2px 0; color: var(--ink-2); }
+.path-steps li.only { color: var(--ink); font-weight: 600; }
+.path-steps li.only::after { content: " ← only here"; font-size: 10px; color: var(--muted); font-weight: 400; }
+
+/* ---------- metadata ---------- */
+.meta-section { margin-bottom: 4px; }
+.meta-section h3 { margin-bottom: 8px; }
+.hash { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.empty { color: var(--muted); font-size: 13px; font-style: italic; }
+footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; text-align: center; }
+
+@media (max-width: 820px) {
+  .trace-layout { grid-template-columns: 1fr; }
+  .path-diff { grid-template-columns: 1fr; }
+  .timeline li { grid-template-columns: 34px 1fr; }
+  .timeline li .event-type { grid-column: 2; }
+}
+@media print {
+  .tabs, .filter-row { display: none; }
+  .tab-panel[hidden] { display: flex !important; }
+  .card { break-inside: avoid; box-shadow: none; }
+}
+</style>
+</head>
+<body data-palette="#2a78d6,#eb6834">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-name">cc-eval</span>
+      <span class="brand-id">{{ spec.id }}</span>
+      <h1>{{ spec.title or spec.id }}</h1>
+    </div>
+    <div class="topbar-meta">
+      <span class="pill {% if metadata.status == 'complete' %}pill-good{% elif metadata.status == 'failed' %}pill-critical{% else %}pill-warning{% endif %}">
+        <span class="pill-icon" aria-hidden="true">{% if metadata.status == 'complete' %}●{% elif metadata.status == 'failed' %}✕{% else %}▲{% endif %}</span>
+        {% if metadata.status == 'complete' %}complete{% elif metadata.status == 'failed' %}failed{% else %}incomplete{% endif %}
+      </span>
+      <span class="pill pill-{{ comparison.decision.verdict.value }}">
+        <span class="pill-icon" aria-hidden="true">{% if comparison.decision.verdict.value == 'improved' %}▲{% elif comparison.decision.verdict.value == 'regressed' %}▼{% else %}◆{% endif %}</span>
+        {{ comparison.decision.verdict.value }}
+      </span>
+      <span class="meta-item"><span class="meta-label">generated</span> {{ metadata.generated_at }}</span>
+      <span class="meta-item"><span class="meta-label">runtime</span> {{ metadata.runtime or 'unknown' }}{% if metadata.model %} · {{ metadata.model }}{% endif %}</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Report sections">
+  <div class="tabs-inner">
+    <button class="tab-button" role="tab" aria-selected="true" aria-controls="tab-overview" id="tabbtn-overview" data-tab="tab-overview">Overview</button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-cases" id="tabbtn-cases" data-tab="tab-cases">Cases<span class="tab-count">{{ movement.total }}</span></button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-traces" id="tabbtn-traces" data-tab="tab-traces">Traces<span class="tab-count">{{ metadata.run_counts.get('total', 0) }}</span></button>
+    <button class="tab-button" role="tab" aria-selected="false" aria-controls="tab-metadata" id="tabbtn-metadata" data-tab="tab-metadata">Metadata</button>
+  </div>
+</nav>
+
+<main>
+
+{# ============================ OVERVIEW ============================ #}
+<section id="tab-overview" class="tab-panel" role="tabpanel" aria-labelledby="tabbtn-overview">
+
+  {% if metadata.status != 'complete' %}
+  <div class="banner banner-{{ metadata.status }}" role="status">
+    <span class="banner-icon" aria-hidden="true">{% if metadata.status == 'failed' %}✕{% else %}▲{% endif %}</span>
+    <div>
+      <strong>{% if metadata.status == 'failed' %}This experiment did not complete{% else %}This report is partial{% endif %}</strong>
+      <p>{{ metadata.status_detail }}</p>
+      <p>The verdict below was derived from the runs that did complete and must not be read as a successful experiment.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid-2">
+    <article class="card">
+      <div class="card-head">
+        <h2>Conclusion</h2>
+        <span class="muted" style="font-size:12px">decided {{ comparison.decision.decided_at }}</span>
+      </div>
+      <div class="verdict-line">
+        <span class="verdict-word verdict-{{ comparison.decision.verdict.value }}">
+          {% if comparison.decision.verdict.value == 'improved' %}▲{% elif comparison.decision.verdict.value == 'regressed' %}▼{% else %}◆{% endif %}
+          {{ comparison.decision.verdict.value }}
+        </span>
+        <span class="pill">{{ metadata.primary_metric }}</span>
+      </div>
+      <p class="verdict-reason">{{ comparison.decision.reason }}</p>
+      <ul class="evidence">
+        {% if primary_card %}
+        <li><span class="evidence-key">Primary metric</span>
+          <span class="tabular">{{ metadata.primary_metric }}: {{ primary_card.baseline|number }} → {{ primary_card.candidate|number }}
+          (Δ {{ primary_card.delta|signed }}{% if primary_card.delta_pct is not none %} / {{ primary_card.delta_pct|percent }}{% endif %})</span></li>
+        {% endif %}
+        <li><span class="evidence-key">Confidence</span>
+          <span class="tabular">{% if primary_card and primary_card.ci_low is not none %}95% CI [{{ primary_card.ci_low|number }}, {{ primary_card.ci_high|number }}]{% if primary_card.significant %} · significant{% else %} · not significant{% endif %}{% else %}no interval available{% endif %}</span></li>
+        <li><span class="evidence-key">Cases</span>
+          <span class="tabular">{{ movement.counts.improved }} improved · {{ movement.counts.regressed }} regressed · {{ movement.counts.unchanged }} unchanged · {{ movement.counts.unknown }} undetermined</span></li>
+        <li><span class="evidence-key">Attribution</span>
+          <span class="tabular">{% if metadata.confound_free %}no blocking confound{% else %}{{ metadata.confounds|length }} confound(s), {{ metadata.confounds|selectattr('severity', 'equalto', 'blocker')|list|length }} blocking{% endif %}</span></li>
+        <li><span class="evidence-key">Runs</span>
+          <span class="tabular">{{ metadata.run_counts.get('baseline', 0) }} baseline · {{ metadata.run_counts.get('candidate', 0) }} candidate · {{ metadata.repetitions }} repetition(s)</span></li>
+      </ul>
+      {% if comparison.decision.notes %}
+      <p class="muted" style="font-size:12px;margin-top:10px">{{ comparison.decision.notes }}</p>
+      {% endif %}
+    </article>
+
+    <article class="card">
+      <h2>Experiment</h2>
+      <dl class="kv">
+        <dt>Hypothesis</dt><dd>{{ spec.hypothesis or '—' }}</dd>
+        <dt>Independent variable</dt><dd>{{ spec.independent_variable or '—' }}</dd>
+        {% if spec.framework_change %}
+        <dt>Change under test</dt><dd>{{ spec.framework_change }}</dd>
+        {% endif %}
+        <dt>Baseline</dt><dd>{{ metadata.baseline_variant }} <span class="muted">({{ spec.baseline.framework.type }}{% if spec.baseline.framework.ref %} {{ spec.baseline.framework.ref }}{% elif spec.baseline.framework.path %} {{ spec.baseline.framework.path }}{% endif %})</span></dd>
+        <dt>Candidate</dt><dd>{{ metadata.candidate_variant }} <span class="muted">({{ spec.candidate.framework.type }}{% if spec.candidate.framework.ref %} {{ spec.candidate.framework.ref }}{% elif spec.candidate.framework.path %} {{ spec.candidate.framework.path }}{% endif %})</span></dd>
+        <dt>Dataset</dt><dd>{{ metadata.dataset_name or '—' }} <span class="muted">{{ metadata.dataset_version }}</span></dd>
+        <dt>Evaluator</dt><dd>{{ metadata.evaluator or '—' }} <span class="muted">{{ metadata.evaluator_version }}</span></dd>
+        {% if spec.references %}
+        <dt>References</dt><dd>{% for reference in spec.references %}<div>{{ reference }}</div>{% endfor %}</dd>
+        {% endif %}
+      </dl>
+    </article>
+  </div>
+
+  {% if metadata.caveats %}
+  <article class="card">
+    <h2>What this data does not support</h2>
+    <ul class="notes" style="font-size:13px">
+      {% for caveat in metadata.caveats %}
+      <li>{{ caveat }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+  {% endif %}
+
+  <div class="tiles">
+    {% if primary_card %}
+    <div class="tile">
+      <span class="tile-label">{{ primary_card.label }} · baseline → candidate</span>
+      <span class="tile-value"><span class="tile-from">{{ primary_card.baseline|metric_number(primary_card.metric) }}</span> → {{ primary_card.candidate|metric_number(primary_card.metric) }}</span>
+      <span class="tile-foot {% if primary_card.delta is not none and (primary_card.delta > 0) == (primary_card.direction == 'higher_is_better') %}delta-good{% elif primary_card.delta is not none %}delta-bad{% endif %}">
+        {% if primary_card.delta is none %}Δ n/a{% else %}{% if primary_card.delta > 0 %}▲{% elif primary_card.delta < 0 %}▼{% else %}◆{% endif %} Δ {{ primary_card.delta|signed }}{% if primary_card.delta_pct is not none %} ({{ primary_card.delta_pct|percent }}){% endif %}{% endif %}
+        · {{ primary_card.direction_label }}
+      </span>
+    </div>
+    {% endif %}
+    <div class="tile">
+      <span class="tile-label">Cases improved</span>
+      <span class="tile-value">{{ movement.counts.improved }}</span>
+      <span class="tile-foot">of {{ movement.total }} cases</span>
+    </div>
+    <div class="tile">
+      <span class="tile-label">Cases regressed</span>
+      <span class="tile-value">{{ movement.counts.regressed }}</span>
+      <span class="tile-foot">{{ movement.counts.unchanged }} unchanged · {{ movement.counts.unknown }} undetermined
+        {%- if movement.counts.guard %} · {{ movement.counts.guard }} regressed on another metric{% endif %}</span>
+    </div>
+    {% for total in totals %}
+    <div class="tile">
+      <span class="tile-label">{{ total.label }} · baseline → candidate</span>
+      <span class="tile-value"><span class="tile-from">{{ total.baseline|metric_number(total.metric) }}</span> → {{ total.candidate|metric_number(total.metric) }}</span>
+      <span class="tile-foot">{% if total.delta is none %}Δ n/a{% else %}Δ {{ total.delta|signed }}{% if total.delta_pct is not none %} ({{ total.delta_pct|percent }}){% endif %}{% endif %}</span>
+    </div>
+    {% endfor %}
+    <div class="tile">
+      <span class="tile-label">Cost delta</span>
+      <span class="tile-value">{% if comparison.cost_delta_usd is none %}n/a{% else %}{{ comparison.cost_delta_usd|signed }}{% endif %}</span>
+      <span class="tile-foot">USD{% if comparison.cost_delta_usd is none %} · not reported by the runtime{% endif %}</span>
+    </div>
+    <div class="tile">
+      <span class="tile-label">Duration delta</span>
+      <span class="tile-value">{% if comparison.duration_delta_sec is none %}n/a{% else %}{{ comparison.duration_delta_sec|signed }}{% endif %}</span>
+      <span class="tile-foot">seconds</span>
+    </div>
+  </div>
+
+  <article class="card">
+    <div class="card-head">
+      <h2>Metric A/B</h2>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--series-1)"></span>{{ metadata.baseline_variant }}</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--series-2)"></span>{{ metadata.candidate_variant }}</span>
+      </div>
+    </div>
+    {% if metric_cards %}
+    <div class="chart-grid">
+      {% for card in metric_cards %}
+      <figure class="chart-card">
+        <figcaption>
+          <span class="chart-title">{{ card.label }}</span>
+          <span class="chart-sub">{{ card.direction_label }} · n={{ card.baseline_n }}/{{ card.candidate_n }}</span>
+        </figcaption>
+        {{ card.svg|safe }}
+        <p class="chart-foot">
+          Δ {% if card.delta is none %}n/a{% else %}{{ card.delta|signed }}{% endif %}
+          {% if card.ci_low is not none %}· 95% CI [{{ card.ci_low|number }}, {{ card.ci_high|number }}]{% endif %}
+          {% if card.baseline_std is not none %}· σ {{ card.baseline_std|number }}/{{ card.candidate_std|number }}{% endif %}
+        </p>
+      </figure>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty">No metric was measured.</p>
+    {% endif %}
+  </article>
+
+  <article class="card">
+    <h2>Metric table</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th><th class="num">Baseline</th><th class="num">Candidate</th>
+            <th class="num">Δ</th><th class="num">Δ%</th><th>95% CI</th>
+            <th class="num">n</th><th>Direction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for card in metric_cards %}
+          <tr>
+            <td>{{ card.label }}{% if card.metric == metadata.primary_metric %} <span class="badge">primary</span>{% endif %}</td>
+            <td class="num">{{ card.baseline|metric_number(card.metric) }}</td>
+            <td class="num">{{ card.candidate|metric_number(card.metric) }}</td>
+            <td class="num">{{ card.delta|signed }}</td>
+            <td class="num">{{ card.delta_pct|percent }}</td>
+            <td class="tabular">{% if card.ci_low is none %}n/a{% else %}[{{ card.ci_low|number }}, {{ card.ci_high|number }}]{% endif %}</td>
+            <td class="num">{{ card.baseline_n }}/{{ card.candidate_n }}</td>
+            <td>{{ card.direction_label }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="empty">No metric was measured.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:8px">Values are macro-averages: each case is averaged over its repetitions first, then the cases are averaged. “n/a” means the runtime did not report the value - it never means zero.</p>
+  </article>
+
+  <article class="card">
+    <h2>Movement by case</h2>
+    <div class="movement-grid">
+      {% for key, label, icon, icon_class in [
+        ('improved', 'Improved', '▲', 'icon-good'),
+        ('regressed', 'Regressed', '▼', 'icon-critical'),
+        ('unchanged', 'Unchanged', '=', 'icon-neutral'),
+        ('unknown', 'Undetermined', '?', 'icon-warning'),
+        ('guard', 'Regressed on another metric', '◆', 'icon-serious')] %}
+      <div class="movement-card">
+        <div class="movement-head">
+          <span class="{{ icon_class }}" aria-hidden="true">{{ icon }}</span>
+          <span>{{ label }}</span>
+          <span class="movement-count">{{ movement.counts[key] }}</span>
+        </div>
+        {% if movement.groups[key] %}
+        <ul class="movement-list">
+          {% for case_id in movement.groups[key] %}<li>{{ case_id }}</li>{% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted" style="font-size:12px;margin:0">None.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  {% if comparison.confounds %}
+  <article class="card">
+    <h2>Confounds</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Severity</th><th>Kind</th><th>Detail</th><th>Where</th></tr></thead>
+        <tbody>
+          {% for confound in comparison.confounds %}
+          <tr>
+            <td>
+              <span class="status-chip {% if confound.severity == 'blocker' %}icon-critical{% elif confound.severity == 'warning' %}icon-warning{% else %}icon-neutral{% endif %}">
+                <span aria-hidden="true">{% if confound.severity == 'blocker' %}✕{% elif confound.severity == 'warning' %}▲{% else %}●{% endif %}</span>
+                {{ confound.severity }}
+              </span>
+            </td>
+            <td class="nowrap">{{ confound.kind }}</td>
+            <td>{{ confound.detail }}</td>
+            <td class="muted">{{ confound.where or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+  {% endif %}
+
+  {% if comparison.manual_review_cases %}
+  <article class="card">
+    <h2>Needs human review</h2>
+    <ul class="notes">
+      {% for case_id in comparison.manual_review_cases %}<li><code>{{ case_id }}</code> — the difference is within noise.</li>{% endfor %}
+    </ul>
+  </article>
+  {% endif %}
+
+  {% if metadata.warnings %}
+  <article class="card">
+    <h2>Warnings</h2>
+    <ul class="notes">
+      {% for warning in metadata.warnings %}<li>{{ warning }}</li>{% endfor %}
+    </ul>
+  </article>
+  {% endif %}
+
+</section>
+
+{# ============================ CASES ============================ #}
+<section id="tab-cases" class="tab-panel" role="tabpanel" aria-labelledby="tabbtn-cases" hidden>
+  <div class="filter-row">
+    <input type="search" id="case-search" placeholder="Search case id, category or tag…" aria-label="Search cases">
+    <div class="chips" role="group" aria-label="Filter by movement">
+      <button class="chip" data-case-filter="all" aria-pressed="true">All<span class="chip-count">{{ movement.total }}</span></button>
+      <button class="chip" data-case-filter="improved" aria-pressed="false">▲ Improved<span class="chip-count">{{ movement.counts.improved }}</span></button>
+      <button class="chip" data-case-filter="regressed" aria-pressed="false">▼ Regressed<span class="chip-count">{{ movement.counts.regressed }}</span></button>
+      <button class="chip" data-case-filter="unchanged" aria-pressed="false">= Unchanged<span class="chip-count">{{ movement.counts.unchanged }}</span></button>
+      <button class="chip" data-case-filter="unknown" aria-pressed="false">? Undetermined<span class="chip-count">{{ movement.counts.unknown }}</span></button>
+    </div>
+    <span class="filter-count" id="case-filter-count"></span>
+  </div>
+
+  <article class="card" style="padding:6px 8px">
+    <div class="table-wrap">
+      <table id="cases-table">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort-key="case_id">Case<span class="sort-caret">↕</span></th>
+            <th class="sortable" data-sort-key="task_type">Category<span class="sort-caret">↕</span></th>
+            <th>Tags</th>
+            <th class="num sortable" data-sort-key="baseline">Baseline<span class="sort-caret">↕</span></th>
+            <th class="num sortable" data-sort-key="candidate">Candidate<span class="sort-caret">↕</span></th>
+            <th class="num sortable" data-sort-key="delta">Δ<span class="sort-caret">↕</span></th>
+            <th>Movement</th>
+            <th class="num">Reps</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for case in case_views %}
+          <tr class="case-row"
+              data-case-index="{{ case.index }}"
+              data-case-id="{{ case.case_id }}"
+              data-status="{{ case.status }}"
+              data-type="{{ case.task_type }}"
+              data-tags="{{ case.tags|join(' ') }}"
+              data-baseline="{{ case.baseline_score if case.baseline_score is not none else '' }}"
+              data-candidate="{{ case.candidate_score if case.candidate_score is not none else '' }}"
+              data-delta="{{ case.delta if case.delta is not none else '' }}"
+              tabindex="0">
+            <td><span class="chevron" aria-hidden="true">›</span> <span class="case-id">{{ case.case_id }}</span></td>
+            <td>{{ case.task_type or '—' }}</td>
+            <td>{% for tag in case.tags %}<span class="tag">{{ tag }}</span>{% else %}<span class="muted">—</span>{% endfor %}</td>
+            <td class="num">{{ case.baseline_score|metric_number(metadata.primary_metric) }}</td>
+            <td class="num">{{ case.candidate_score|metric_number(metadata.primary_metric) }}</td>
+            <td class="num">
+              {% if case.delta is none %}<span class="muted">n/a</span>{% else %}{{ case.delta|signed }}{% endif %}
+              {% if case.delta is not none and max_abs_delta > 0 %}{{ case.delta_svg|safe }}{% endif %}
+            </td>
+            <td>
+              <span class="status-chip {% if case.status == 'improved' %}icon-good{% elif case.status == 'regressed' %}icon-critical{% elif case.status == 'unknown' %}icon-warning{% else %}icon-neutral{% endif %}">
+                <span aria-hidden="true">{% if case.status == 'improved' %}▲{% elif case.status == 'regressed' %}▼{% elif case.status == 'unknown' %}?{% else %}={% endif %}</span>
+                {{ case.status }}
+              </span>
+              {% if case.regressed_metrics %}
+              <div class="muted" style="font-size:11px">regressed on {{ case.regressed_metrics|join(', ') }}</div>
+              {% endif %}
+            </td>
+            <td class="num">{{ case.baseline_per_repetition|length }}/{{ case.candidate_per_repetition|length }}</td>
+          </tr>
+          <tr class="case-detail" id="case-detail-{{ case.index }}" hidden>
+            <td colspan="8">
+              <div class="detail-inner">
+                {% if case.title %}<p class="secondary"><strong>{{ case.title }}</strong></p>{% endif %}
+                {% if case.notes %}
+                <div>
+                  <h4>Assessment</h4>
+                  <ul class="notes">
+                    {% for note in case.notes %}<li>{{ note }}</li>{% endfor %}
+                  </ul>
+                </div>
+                {% endif %}
+                <div class="detail-columns">
+                  {% for side in ['baseline', 'candidate'] %}
+                  <div class="detail-side">
+                    <h4>
+                      <span class="legend-swatch" style="background:{% if side == 'baseline' %}var(--series-1){% else %}var(--series-2){% endif %}"></span>
+                      {{ metadata.baseline_variant if side == 'baseline' else metadata.candidate_variant }}
+                    </h4>
+                    {% set runs = case.runs|selectattr('variant', 'equalto', side)|list %}
+                    {% if not runs %}
+                    <p class="empty">No run was recorded for this side.</p>
+                    {% endif %}
+                    {% for run in runs %}
+                    <div class="detail-run">
+                      <div class="run-title">
+                        <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status }}</span>
+                        <span>repetition {{ run.repetition }}</span>
+                        <span class="muted">{{ run.run_id }}</span>
+                      </div>
+                      {% if run.error %}
+                      <div class="error-box">{{ run.error }}</div>
+                      {% endif %}
+                      {% if run.missing_fields %}
+                      <div class="missing-box">Not reported by the runtime: {{ run.missing_fields|join(', ') }}</div>
+                      {% endif %}
+                      <dl class="kv-inline">
+                        {% for key, value in run.metrics.items() %}
+                        <dt>{{ key }}</dt><dd class="tabular">{{ value|number }}</dd>
+                        {% endfor %}
+                        <dt>tokens</dt><dd class="tabular">{% if run.usage.total_tokens is none %}n/a{% else %}{{ run.usage.total_tokens }} ({{ run.usage.source }}){% endif %}</dd>
+                        <dt>cost</dt><dd class="tabular">{% if run.usage.cost_usd is none %}n/a{% else %}{{ run.usage.cost_usd|number }} USD{% endif %}</dd>
+                      </dl>
+                      {% if run.matched or run.unmatched_golden or run.unmatched_predictions %}
+                      <h4>Scoring evidence</h4>
+                      <ul class="evidence-list">
+                        {% for item in run.matched %}<li>matched <code>{{ item.golden_id }}</code> → <code>{{ item.predicted_id or '—' }}</code> ({{ item.matched_by }})</li>{% endfor %}
+                        {% for golden in run.unmatched_golden %}<li>missed ground truth <code>{{ golden }}</code></li>{% endfor %}
+                        {% for prediction in run.unmatched_predictions %}<li>unmatched prediction <code>{{ prediction }}</code></li>{% endfor %}
+                      </ul>
+                      {% endif %}
+                      {% if run.evaluation_errors %}
+                      <div class="error-box">
+                        {% for error in run.evaluation_errors %}<div>{{ error }}</div>{% endfor %}
+                      </div>
+                      {% endif %}
+                      {% if run.output_text %}
+                      <h4>Agent output</h4>
+                      <pre>{{ run.output_text }}</pre>
+                      {% endif %}
+                      {% for path, content in run.output_files.items() %}
+                      <h4>Output file · {{ path }}</h4>
+                      <pre>{{ content }}</pre>
+                      {% endfor %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% endfor %}
+                </div>
+                <div>
+                  <h4>Repetition statistics</h4>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Side</th><th>Scores per repetition</th><th class="num">Variance</th></tr></thead>
+                      <tbody>
+                        <tr>
+                          <td>baseline</td>
+                          <td class="tabular">{% if case.baseline_per_repetition %}{{ case.baseline_per_repetition|map('metric_number', metadata.primary_metric)|join(', ') }}{% else %}n/a{% endif %}</td>
+                          <td class="num">{{ case.baseline_variance|number }}</td>
+                        </tr>
+                        <tr>
+                          <td>candidate</td>
+                          <td class="tabular">{% if case.candidate_per_repetition %}{{ case.candidate_per_repetition|map('metric_number', metadata.primary_metric)|join(', ') }}{% else %}n/a{% endif %}</td>
+                          <td class="num">{{ case.candidate_variance|number }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="empty">No case was evaluated.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+
+{# ============================ TRACES ============================ #}
+<section id="tab-traces" class="tab-panel" role="tabpanel" aria-labelledby="tabbtn-traces" hidden>
+  <div class="trace-layout">
+    <aside class="card trace-side" aria-label="Cases">
+      {% for case in case_views %}
+      <button class="trace-case-btn" data-trace-case="{{ case.index }}" aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+        <span class="trace-case-id">{{ case.case_id }}</span>
+        <span class="trace-case-sub">{{ case.task_type or '—' }} · {{ case.runs|length }} run(s)</span>
+      </button>
+      {% else %}
+      <p class="empty">No trace was recorded.</p>
+      {% endfor %}
+    </aside>
+
+    <div>
+      {% for case in case_views %}
+      <section class="trace-case-panel" id="trace-case-{{ case.index }}" {% if not loop.first %}hidden{% endif %}>
+        <article class="card">
+          <div class="card-head">
+            <h2>{{ case.case_id }}</h2>
+            <span class="muted" style="font-size:12px">{{ case.task_type or 'unknown category' }} · {{ case.runs|length }} run(s)</span>
+          </div>
+
+          <h3 style="margin-bottom:8px">Run</h3>
+          <div class="run-tabs">
+            {% for run in case.runs %}
+            <button class="chip" data-trace-run="{{ case.index }}-{{ loop.index0 }}" aria-pressed="{% if loop.first %}true{% else %}false{% endif %}">
+              {{ run.variant }} · r{{ run.repetition }}
+            </button>
+            {% endfor %}
+          </div>
+
+          {% for run in case.runs %}
+          <div class="trace-run-panel" id="trace-run-{{ case.index }}-{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+            <div class="run-title" style="margin-bottom:10px">
+              <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status }}</span>
+              <span class="badge">{{ run.run_id }}</span>
+              <span class="muted">{{ run.variant }} · repetition {{ run.repetition }}</span>
+              {% if run.redacted %}<span class="badge badge-missing">redacted</span>{% endif %}
+              {% if run.trace_present %}<span class="badge">trace available</span>{% else %}<span class="badge badge-missing">no trace</span>{% endif %}
+            </div>
+            {% if run.missing_fields %}
+            <div class="missing-box">This runtime did not provide: {{ run.missing_fields|join(', ') }}. Those values are shown as n/a, never as zero.</div>
+            {% endif %}
+            {% if run.error %}
+            <div class="error-box">{{ run.error }}</div>
+            {% endif %}
+            {% if run.trace_events %}
+            <ul class="timeline">
+              {% for event in run.trace_events %}
+              <li>
+                <span class="seq">{{ event.seq }}</span>
+                <span class="event-type">{{ event.type }}</span>
+                <span>
+                  <span class="event-name">{{ event.name or event.tool or '—' }}</span>
+                  {% if event.status %}<span class="event-detail"> · {{ event.status }}</span>{% endif %}
+                  {% if event.duration_ms is not none %}<span class="event-detail"> · {{ event.duration_ms }} ms</span>{% endif %}
+                  {% if event.error %}<div class="event-error">{{ event.error }}</div>{% endif %}
+                  {% if event.details %}<div class="event-detail">{{ event.details|json_compact }}</div>{% endif %}
+                </span>
+                <span class="muted">{{ event.duration_ms if event.duration_ms is not none else '' }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty">No trace event was recorded for this run.</p>
+            {% endif %}
+            {% if run.capabilities %}
+            <h4 style="margin-top:12px">Capability evidence</h4>
+            <ul class="evidence-list">
+              {% for capability in run.capabilities %}
+              <li><code>{{ capability.name }}</code> — {{ capability.status }}{% if capability.evidence %} ({{ capability.evidence }}){% endif %}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </article>
+
+        <article class="card" style="margin-top:16px">
+          <h2>A/B execution path</h2>
+          <p class="muted" style="font-size:12px">Where the two variants took a different path through the case.</p>
+          {% for diff in case.trace_diff %}
+          <div style="margin-bottom:14px">
+            <h4>Repetition {{ diff.repetition }}
+              {% if diff.identical %}<span class="badge">identical path</span>{% else %}<span class="badge badge-missing">paths differ</span>{% endif %}
+            </h4>
+            <div class="path-diff">
+              <div class="path-col">
+                <div class="legend" style="margin-bottom:6px"><span class="legend-item"><span class="legend-swatch" style="background:var(--series-1)"></span>baseline</span></div>
+                <ul class="path-steps">
+                  {% for step in diff.baseline_steps %}
+                  <li class="{% if step in diff.only_in_baseline %}only{% endif %}">{{ step }}</li>
+                  {% else %}<li class="muted">no trace</li>{% endfor %}
+                </ul>
+              </div>
+              <div class="path-col">
+                <div class="legend" style="margin-bottom:6px"><span class="legend-item"><span class="legend-swatch" style="background:var(--series-2)"></span>candidate</span></div>
+                <ul class="path-steps">
+                  {% for step in diff.candidate_steps %}
+                  <li class="{% if step in diff.only_in_candidate %}only{% endif %}">{{ step }}</li>
+                  {% else %}<li class="muted">no trace</li>{% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </article>
+      </section>
+      {% else %}
+      <article class="card"><p class="empty">No trace was recorded for this experiment.</p></article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ============================ METADATA ============================ #}
+<section id="tab-metadata" class="tab-panel" role="tabpanel" aria-labelledby="tabbtn-metadata" hidden>
+  <div class="grid-2">
+    <article class="card">
+      <h2>Runtime</h2>
+      <dl class="kv">
+        <dt>Runtime</dt><dd>{{ metadata.runtime or 'unknown' }} {{ metadata.runtime_version }}</dd>
+        <dt>Model</dt><dd>{{ metadata.model or 'n/a' }}{% if metadata.model_reported_by %} <span class="muted">(reported by {{ metadata.model_reported_by }})</span>{% endif %}</dd>
+        <dt>Seed control</dt><dd>{% if metadata.seed_supported %}supported{% else %}not supported — runs are not bit-reproducible{% endif %}</dd>
+        <dt>Seed</dt><dd class="tabular">{{ metadata.seed }}</dd>
+        <dt>Order policy</dt><dd>{{ metadata.order_policy }}</dd>
+        <dt>Repetitions</dt><dd>{{ metadata.repetitions }}</dd>
+        <dt>Run status</dt><dd>{% for status, count in metadata.run_statuses.items() %}{{ status }}: {{ count }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</dd>
+      </dl>
+    </article>
+
+    <article class="card">
+      <h2>Framework</h2>
+      <dl class="kv">
+        <dt>cc-eval commit</dt><dd class="hash">{{ metadata.cc_eval_commit or 'unknown' }}</dd>
+        <dt>Config hash</dt><dd class="hash">{{ metadata.config_hash or 'n/a' }}</dd>
+        {% for variant, fingerprint in metadata.framework_fingerprints.items() %}
+        <dt>Fingerprint · {{ variant }}</dt><dd class="hash">{{ fingerprint }}</dd>
+        {% endfor %}
+        {% for variant, commit in metadata.framework_commits.items() %}
+        <dt>Commit · {{ variant }}</dt><dd class="hash">{{ commit or 'n/a (directory snapshot)' }}</dd>
+        {% endfor %}
+        {% for variant, dirty in metadata.framework_dirty.items() %}
+        <dt>Working tree · {{ variant }}</dt><dd>{{ 'dirty (uncommitted changes present)' if dirty else 'clean' }}</dd>
+        {% endfor %}
+        <dt>Expected changes</dt><dd>{% for change in spec.expected_changes %}<div>{{ change }}</div>{% else %}<span class="muted">none declared</span>{% endfor %}</dd>
+      </dl>
+    </article>
+
+    <article class="card">
+      <h2>Data &amp; evaluation</h2>
+      <dl class="kv">
+        <dt>Dataset</dt><dd>{{ metadata.dataset_name or 'n/a' }}</dd>
+        <dt>Dataset version</dt><dd>{{ metadata.dataset_version or 'n/a' }}</dd>
+        <dt>Dataset hash</dt><dd class="hash">{{ metadata.dataset_hash or 'n/a' }}</dd>
+        <dt>Evaluator</dt><dd>{{ metadata.evaluator or 'n/a' }}</dd>
+        <dt>Evaluator version</dt><dd>{{ metadata.evaluator_version or 'n/a' }}</dd>
+        <dt>Primary metric</dt><dd>{{ metadata.primary_metric }} ({{ spec.decision_rules.direction }})</dd>
+        <dt>Missing data</dt><dd>{% if metadata.missing_data %}{{ metadata.missing_data|join(', ') }}{% else %}none reported{% endif %}</dd>
+        <dt>Redactions</dt><dd>{% if metadata.redaction_stats %}{{ metadata.redaction_stats|length }} kind(s) scrubbed{% else %}none{% endif %}</dd>
+      </dl>
+    </article>
+
+    <article class="card">
+      <h2>Controls</h2>
+      <dl class="kv">
+        {% for key, value in metadata.controls.items() %}
+        <dt>{{ key }}</dt><dd class="hash">{{ value|json_compact }}</dd>
+        {% endfor %}
+      </dl>
+    </article>
+
+    <article class="card">
+      <h2>Decision rules</h2>
+      <p class="muted" style="font-size:12px">Declared in the experiment file before the runs.</p>
+      <dl class="kv">
+        {% for key, value in metadata.decision_rules.items() %}
+        <dt>{{ key }}</dt><dd class="hash">{{ value|json_compact }}</dd>
+        {% endfor %}
+      </dl>
+    </article>
+
+    <article class="card">
+      <h2>Environment</h2>
+      <dl class="kv">
+        {% for key, value in metadata.environment.items() %}
+        <dt>{{ key }}</dt><dd class="hash">{{ value }}</dd>
+        {% endfor %}
+      </dl>
+    </article>
+
+    <article class="card">
+      <h2>Run ids</h2>
+      <ul class="evidence-list">
+        {% for run_id in metadata.run_ids %}<li><code>{{ run_id }}</code></li>{% else %}<li class="muted">no run was recorded</li>{% endfor %}
+      </ul>
+    </article>
+
+    <article class="card">
+      <h2>Confounds</h2>
+      {% if metadata.confound_free %}
+      <p class="muted" style="font-size:13px">No blocking confound was detected.</p>
+      {% else %}
+      <ul class="notes">
+        {% for confound in metadata.confounds %}
+        <li><strong>{{ confound.severity }}</strong> · {{ confound.kind }} — {{ confound.detail }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </article>
+  </div>
+</section>
+
+</main>
+
+<footer class="page-footer">
+  cc-eval · {{ spec.id }} · generated {{ metadata.generated_at }} · this file is self-contained and needs no network access
+</footer>
+
+<script id="cc-eval-report-data" type="application/json">{{ data_json|safe }}</script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- tabs --
+  var tabButtons = Array.prototype.slice.call(document.querySelectorAll(".tab-button"));
+  function activateTab(name) {
+    tabButtons.forEach(function (button) {
+      var selected = button.getAttribute("data-tab") === name;
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+      var panel = document.getElementById(button.getAttribute("data-tab"));
+      if (panel) { panel.hidden = !selected; }
+    });
+    try { window.location.hash = name; } catch (e) { /* file:// without history */ }
+  }
+  tabButtons.forEach(function (button) {
+    button.addEventListener("click", function () { activateTab(button.getAttribute("data-tab")); });
+  });
+  if (window.location.hash) {
+    var initial = window.location.hash.replace("#", "");
+    if (document.getElementById(initial)) { activateTab(initial); }
+  }
+
+  // ---------------------------------------------------------------- cases --
+  var rows = Array.prototype.slice.call(document.querySelectorAll("#cases-table .case-row"));
+  var searchInput = document.getElementById("case-search");
+  var filterChips = Array.prototype.slice.call(document.querySelectorAll("[data-case-filter]"));
+  var counter = document.getElementById("case-filter-count");
+  var activeFilter = "all";
+
+  function cellValue(row, key) {
+    var raw = row.getAttribute("data-" + key);
+    return raw === null || raw === "" ? null : raw;
+  }
+
+  function matches(row) {
+    if (activeFilter !== "all" && row.getAttribute("data-status") !== activeFilter) { return false; }
+    var term = (searchInput && searchInput.value ? searchInput.value : "").trim().toLowerCase();
+    if (!term) { return true; }
+    var haystack = [
+      row.getAttribute("data-case-id") || "",
+      row.getAttribute("data-type") || "",
+      row.getAttribute("data-tags") || "",
+      row.textContent || ""
+    ].join(" ").toLowerCase();
+    return haystack.indexOf(term) !== -1;
+  }
+
+  function applyFilters() {
+    var visible = 0;
+    rows.forEach(function (row) {
+      var ok = matches(row);
+      row.hidden = !ok;
+      if (!ok) { closeDetail(row); }
+      if (ok) { visible += 1; }
+    });
+    if (counter) { counter.textContent = visible + " of " + rows.length + " case(s) shown"; }
+  }
+
+  function detailFor(row) {
+    var index = row.getAttribute("data-case-index");
+    return document.getElementById("case-detail-" + index);
+  }
+
+  function closeDetail(row) {
+    var detail = detailFor(row);
+    if (detail) { detail.hidden = true; }
+    row.classList.remove("is-open");
+  }
+
+  function toggleDetail(row) {
+    var detail = detailFor(row);
+    if (!detail) { return; }
+    var open = !detail.hidden;
+    detail.hidden = open;
+    row.classList.toggle("is-open", !open);
+    row.setAttribute("aria-expanded", open ? "false" : "true");
+  }
+
+  rows.forEach(function (row) {
+    row.setAttribute("aria-expanded", "false");
+    row.addEventListener("click", function () { toggleDetail(row); });
+    row.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleDetail(row);
+      }
+    });
+  });
+
+  if (searchInput) { searchInput.addEventListener("input", applyFilters); }
+  filterChips.forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      activeFilter = chip.getAttribute("data-case-filter");
+      filterChips.forEach(function (other) {
+        other.setAttribute("aria-pressed", other === chip ? "true" : "false");
+      });
+      applyFilters();
+    });
+  });
+  applyFilters();
+
+  // -------------------------------------------------------------- sorting --
+  var table = document.getElementById("cases-table");
+  if (table) {
+    var headers = Array.prototype.slice.call(table.querySelectorAll("th.sortable"));
+    headers.forEach(function (header) {
+      header.addEventListener("click", function () {
+        var key = header.getAttribute("data-sort-key");
+        var ascending = header.getAttribute("data-sort-state") !== "asc";
+        headers.forEach(function (other) { other.removeAttribute("data-sort-state"); });
+        header.setAttribute("data-sort-state", ascending ? "asc" : "desc");
+        var body = table.querySelector("tbody");
+        var caseRows = rows.slice().sort(function (a, b) {
+          var av = cellValue(a, key);
+          var bv = cellValue(b, key);
+          if (av === null && bv === null) { return 0; }
+          if (av === null) { return 1; }
+          if (bv === null) { return -1; }
+          var an = parseFloat(av);
+          var bn = parseFloat(bv);
+          if (!isNaN(an) && !isNaN(bn)) { return ascending ? an - bn : bn - an; }
+          return ascending ? av.localeCompare(bv) : bv.localeCompare(av);
+        });
+        caseRows.forEach(function (row) {
+          var detail = detailFor(row);
+          body.appendChild(row);
+          if (detail) { body.appendChild(detail); }
+        });
+      });
+    });
+  }
+
+  // --------------------------------------------------------------- traces --
+  var traceCaseButtons = Array.prototype.slice.call(document.querySelectorAll("[data-trace-case]"));
+  var traceRunButtons = Array.prototype.slice.call(document.querySelectorAll("[data-trace-run]"));
+
+  function showTraceCase(index) {
+    traceCaseButtons.forEach(function (button) {
+      button.setAttribute("aria-selected", button.getAttribute("data-trace-case") === index ? "true" : "false");
+    });
+    Array.prototype.slice.call(document.querySelectorAll(".trace-case-panel")).forEach(function (panel) {
+      panel.hidden = panel.id !== "trace-case-" + index;
+    });
+  }
+
+  function showTraceRun(key) {
+    traceRunButtons.forEach(function (button) {
+      button.setAttribute("aria-pressed", button.getAttribute("data-trace-run") === key ? "true" : "false");
+    });
+    Array.prototype.slice.call(document.querySelectorAll(".trace-run-panel")).forEach(function (panel) {
+      panel.hidden = panel.id !== "trace-run-" + key;
+    });
+  }
+
+  traceCaseButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var index = button.getAttribute("data-trace-case");
+      showTraceCase(index);
+      var firstRun = document.querySelector('[data-trace-run^="' + index + '-"]');
+      if (firstRun) { showTraceRun(firstRun.getAttribute("data-trace-run")); }
+    });
+  });
+
+  traceRunButtons.forEach(function (button) {
+    button.addEventListener("click", function () { showTraceRun(button.getAttribute("data-trace-run")); });
+  });
+})();
+</script>
+</body>
+</html>

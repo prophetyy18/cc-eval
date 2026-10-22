@@ -35,9 +35,15 @@ from ..core.experiment import (
 )
 from ..core.models import ComparisonReport, Decision, ExperimentSpec, Variant
 from ..core.registry import Registry
-from ..datasets.loader import BenchmarkError, load_benchmark, validate_benchmark
+from ..datasets.loader import Benchmark, BenchmarkError, load_benchmark, validate_benchmark
 from ..evaluators import get_evaluator
-from ..reports import render_markdown, write_json
+from ..reports import (
+    ReportModel,
+    build_report_model,
+    render_markdown,
+    write_html,
+    write_model_json,
+)
 from ..runners import available_runners, get_runner
 from ..runners.base import RunConfig
 from ..traces.store import TraceStore
@@ -246,6 +252,118 @@ def _build_comparison(
         evaluator=evaluator,
     )
     return report
+
+
+def _maybe_load_benchmark(
+    spec: ExperimentSpec, spec_path: Path, paths: EvalPaths
+) -> Benchmark | None:
+    """Load the benchmark of an experiment, if it is still reachable.
+
+    The benchmark carries the case metadata (category, title, tags) that the
+    report shows.  A report must still be renderable when the benchmark is
+    gone, so this never fails: the fields are simply reported as unknown.
+    """
+    raw = Path(spec.controls.benchmark)
+    candidates = [raw]
+    if not raw.is_absolute():
+        candidates += [
+            Path.cwd() / raw,
+            spec_path.parent / raw,
+            spec_path.parent.parent / raw,
+            paths.root.parent / raw,
+        ]
+    for candidate in candidates:
+        try:
+            if candidate.exists():
+                return load_benchmark(candidate)
+        except BenchmarkError:
+            continue
+    return None
+
+
+def _build_model(
+    spec: ExperimentSpec,
+    records: list[RunRecord],
+    paths: EvalPaths,
+    *,
+    tree_diff=None,
+    benchmark: Benchmark | None = None,
+    execution_errors: list[str] | None = None,
+    execution_warnings: list[str] | None = None,
+) -> ReportModel:
+    """Build the report model: the single input of every renderer."""
+    comparison = _build_comparison(spec, records, paths, tree_diff=tree_diff)
+    return build_report_model(
+        spec,
+        comparison,
+        records,
+        benchmark=benchmark,
+        dataset_name=benchmark.name if benchmark is not None else "",
+        execution_errors=execution_errors or [],
+        execution_warnings=execution_warnings or [],
+    )
+
+
+#: The file extensions of the report formats.
+_FORMAT_SUFFIX = {"html": ".html", "json": ".json", "md": ".md"}
+
+#: The formats the CLI accepts and the files each of them produces.
+_FORMATS = {
+    "html": ["html"],
+    "md": ["md"],
+    "json": ["json"],
+    "both": ["md", "json"],
+    "all": ["html", "md", "json"],
+}
+
+
+def _write_report(
+    model: ReportModel,
+    fmt: str,
+    target: Path,
+    *,
+    template: str | None = None,
+) -> Path:
+    """Write one report file."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if fmt == "html":
+        write_html(model, target, template=template)
+    elif fmt == "json":
+        write_model_json(model, target)
+    elif fmt == "md":
+        target.write_text(render_markdown(model.report, model.experiment), encoding="utf-8")
+    else:  # pragma: no cover - guarded by the CLI
+        raise ValueError(f"unknown report format: {fmt}")
+    return target
+
+
+def _write_reports(
+    model: ReportModel,
+    formats: list[str],
+    paths: EvalPaths,
+    *,
+    output: str | None = None,
+    template: str | None = None,
+) -> dict[str, Path]:
+    """Write the requested report formats.
+
+    Without ``--output`` the reports go to ``<root>/reports/<EXP-ID>/`` (the
+    bundle: ``report.html``, ``report.json``, ``report.md``) and the legacy
+    flat files ``<root>/reports/<EXP-ID>.json`` / ``.md`` are kept in sync.
+    """
+    written: dict[str, Path] = {}
+    bundle = paths.reports / model.metadata.experiment_id
+    for fmt in formats:
+        suffix = _FORMAT_SUFFIX[fmt]
+        if output is not None:
+            target = Path(output) if len(formats) == 1 else Path(output).with_suffix(suffix)
+        else:
+            target = bundle / f"report{suffix}"
+        written[fmt] = _write_report(model, fmt, target, template=template)
+        if output is None and fmt in {"json", "md"}:
+            legacy = paths.reports / f"{model.metadata.experiment_id}{suffix}"
+            written[f"legacy-{fmt}"] = _write_report(model, fmt, legacy, template=template)
+    return written
 
 
 # --------------------------------------------------------------------------- #
@@ -593,9 +711,17 @@ def run(
     # Build and persist the comparison so that `compare` and `report` can work
     # from the stored data.
     records = [record for record in execution.records]
-    report = _build_comparison(spec, records, paths, tree_diff=execution.tree_diff)
-    report_path = paths.reports / f"{spec.id}.json"
-    write_json(report, report_path, spec)
+    model = _build_model(
+        spec,
+        records,
+        paths,
+        tree_diff=execution.tree_diff,
+        benchmark=benchmark,
+        execution_errors=execution.errors,
+        execution_warnings=execution.warnings,
+    )
+    report = model.report
+    written = _write_reports(model, ["html", "json", "md"], paths)
     registry.append_decision(spec.id, report.decision)
     registry.register_experiment(
         spec.id,
@@ -606,12 +732,22 @@ def run(
         candidate_commit=spec.candidate.framework.ref,
         dataset=benchmark.name,
         dataset_version=benchmark.version,
-        status="completed",
+        status="completed" if model.status == "complete" else "partial",
+        reports={fmt: str(path) for fmt, path in written.items()},
     )
 
     typer.echo("")
     typer.echo(f"verdict: {report.decision.verdict.value} - {report.decision.reason}")
-    typer.echo(f"report:  {report_path}")
+    typer.echo(f"html report: {written['html']}")
+    typer.echo(f"json report: {written['json']}")
+    typer.echo(f"markdown:    {written['md']}")
+    if model.status != "complete":
+        typer.secho(
+            f"warning: the experiment did not complete ({model.status}); the report is "
+            "marked as partial and must not be read as a successful experiment.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
 
 
 @app.command("compare")
@@ -624,7 +760,7 @@ def compare_command(
 ) -> None:
     """Compare the baseline and the candidate of an experiment."""
     paths = _paths(root)
-    spec, _ = _load_spec(paths, experiment_id, file)
+    spec, spec_path = _load_spec(paths, experiment_id, file)
     records = _load_records(paths, spec.id)
     if not records:
         typer.secho(
@@ -635,10 +771,11 @@ def compare_command(
         raise typer.Exit(code=2)
 
     tree_diff = _tree_diff_from_records(spec, paths)
-    report = _build_comparison(spec, records, paths, tree_diff=tree_diff)
+    model = _build_model(spec, records, paths, tree_diff=tree_diff)
+    report = model.report
 
     report_path = Path(output) if output else paths.reports / f"{spec.id}.json"
-    write_json(report, report_path, spec)
+    write_model_json(model, report_path)
     registry = Registry(paths.registry)
     registry.append_decision(experiment_id, report.decision)
 
@@ -683,12 +820,21 @@ def report_command(
     experiment_id: str = typer.Argument(...),
     root: Optional[str] = RootOption,
     file: Optional[str] = typer.Option(None, "--file"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Markdown output path."),
-    fmt: str = typer.Option("md", "--format", "-f", help="md, json or both."),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output path."),
+    fmt: str = typer.Option(
+        "all", "--format", "-f", help="html, md, json, both (md+json) or all (default)."
+    ),
+    template: Optional[str] = typer.Option(
+        None, "--template", help="Custom HTML template (Jinja2) to render the report with."
+    ),
 ) -> None:
-    """Render the experiment report."""
+    """Render the experiment report.
+
+    The HTML report is the default output; it is a self-contained file that
+    opens in any browser and needs no network access.
+    """
     paths = _paths(root)
-    spec, _ = _load_spec(paths, experiment_id, file)
+    spec, spec_path = _load_spec(paths, experiment_id, file)
     records = _load_records(paths, spec.id)
     if not records:
         typer.secho(
@@ -698,34 +844,94 @@ def report_command(
         )
         raise typer.Exit(code=2)
 
+    formats = _FORMATS.get(fmt)
+    if formats is None:
+        typer.secho(
+            f"unknown format {fmt!r}; use one of: {', '.join(sorted(_FORMATS))}",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
     tree_diff = _tree_diff_from_records(spec, paths)
-    report = _build_comparison(spec, records, paths, tree_diff=tree_diff)
-    markdown = render_markdown(report, spec)
+    benchmark = _maybe_load_benchmark(spec, spec_path, paths)
+    model = _build_model(
+        spec, records, paths, tree_diff=tree_diff, benchmark=benchmark
+    )
+    written = _write_reports(model, formats, paths, output=output, template=template)
 
-    md_path: Path | None = None
-    json_path: Path | None = None
-    if fmt in {"md", "both"}:
-        md_path = (
-            Path(output).with_suffix(".md")
-            if output and fmt == "both"
-            else (Path(output) if output else paths.reports / f"{spec.id}.md")
-        )
-        md_path.parent.mkdir(parents=True, exist_ok=True)
-        md_path.write_text(markdown, encoding="utf-8")
-    if fmt in {"json", "both"}:
-        json_path = (
-            Path(output).with_suffix(".json")
-            if output and fmt == "both"
-            else (Path(output) if output else paths.reports / f"{spec.id}.json")
-        )
-        write_json(report, json_path, spec)
+    if "md" in formats:
+        typer.echo(render_markdown(model.report, model.experiment))
+        typer.echo("")
+    for name in formats:
+        typer.echo(f"{name} report: {written[name]}")
+    if "html" in formats:
+        typer.echo("")
+        typer.echo(f"open it with: xdg-open {written['html']}")
 
-    typer.echo(markdown)
-    typer.echo("")
-    if md_path is not None:
-        typer.echo(f"markdown report: {md_path}")
-    if json_path is not None:
-        typer.echo(f"json report:     {json_path}")
+
+@app.command("render")
+def render_command(
+    experiment_id: str = typer.Argument(...),
+    root: Optional[str] = RootOption,
+    file: Optional[str] = typer.Option(None, "--file"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output path."),
+    fmt: str = typer.Option(
+        "html", "--format", "-f", help="html, md, json, both (md+json) or all (default)."
+    ),
+    template: Optional[str] = typer.Option(
+        None, "--template", help="Custom HTML template (Jinja2) to render the report with."
+    ),
+) -> None:
+    """(Re)render the reports from the stored runs - without running anything.
+
+    The evaluation is not repeated: the stored run records and traces are
+    rendered again, which is how the HTML template can be iterated on.
+    """
+    paths = _paths(root)
+    spec, spec_path = _load_spec(paths, experiment_id, file)
+    records = _load_records(paths, spec.id)
+    if not records:
+        typer.secho(
+            f"no runs found for {spec.id} - run 'cc-eval run {spec.id}' first",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    formats = _FORMATS.get(fmt)
+    if formats is None:
+        typer.secho(
+            f"unknown format {fmt!r}; use one of: {', '.join(sorted(_FORMATS))}",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    tree_diff = _tree_diff_from_records(spec, paths)
+    benchmark = _maybe_load_benchmark(spec, spec_path, paths)
+    model = _build_model(
+        spec, records, paths, tree_diff=tree_diff, benchmark=benchmark
+    )
+    written = _write_reports(model, formats, paths, output=output, template=template)
+
+    registry = Registry(paths.registry)
+    registry.register_experiment(
+        spec.id,
+        title=spec.title,
+        hypothesis=spec.hypothesis,
+        framework_change=spec.framework_change,
+        baseline_commit=spec.baseline.framework.ref,
+        candidate_commit=spec.candidate.framework.ref,
+        dataset=model.metadata.dataset_name,
+        dataset_version=model.metadata.dataset_version,
+        status="completed" if model.status == "complete" else "partial",
+        reports={fmt: str(path) for fmt, path in written.items()},
+    )
+
+    for name in formats:
+        typer.echo(f"{name} report: {written[name]}")
+    typer.echo("no experiment was executed: the stored runs were rendered again")
 
 
 @benchmark_app.command("validate")
@@ -770,6 +976,26 @@ def registry_list(root: Optional[str] = RootOption) -> None:
         return
     for entry in entries:
         typer.echo(f"{entry['experiment_id']:<12} {entry.get('status', '?'):<10} {entry.get('title', '')}")
+
+
+@registry_app.command("reports")
+def registry_reports(
+    root: Optional[str] = RootOption,
+) -> None:
+    """List the generated reports of every experiment."""
+    paths = _paths(root)
+    registry = Registry(paths.registry)
+    entries = registry.list_reports()
+    if not entries:
+        typer.echo("no report has been generated yet")
+        return
+    for entry in entries:
+        typer.echo(
+            f"{entry['experiment_id']:<12} {entry.get('verdict', '-'):<14} "
+            f"{entry.get('title', '')}"
+        )
+        for fmt, path in sorted((entry.get("reports") or {}).items()):
+            typer.echo(f"    {fmt:<14} {path}")
 
 
 @registry_app.command("show")
