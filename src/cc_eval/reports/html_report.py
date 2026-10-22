@@ -27,7 +27,7 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from .charts import delta_bar, is_rate_metric, metric_mini_chart
-from .i18n import Translator, resolve_language
+from .i18n import Translator, metric_label, resolve_language
 from .model import ReportModel, metric_label
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -280,6 +280,12 @@ def build_context(report: ReportModel, language: str | None = None) -> dict[str,
         view["index"] = index
         view["delta_svg"] = delta_bar(case.delta, max_abs, case.status)
         for run in view["runs"]:
+            # The metric names and the run status are shown to the reader.
+            run["metrics_labeled"] = [
+                (metric_label(metric, translator.language), value)
+                for metric, value in (run.get("metrics") or {}).items()
+            ]
+            run["status_label"] = translator.s(f"run_status_{run.get('status', 'success')}")
             # A denied tool call is the difference between "the agent decided
             # not to write" and "the agent was not allowed to write".
             denials: list[Any] = []

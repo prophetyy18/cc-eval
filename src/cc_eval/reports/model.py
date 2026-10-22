@@ -155,6 +155,8 @@ class ReportCase(StrictModel):
     candidate_variance: float | None = None
     regressed_metrics: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+    #: The stable identifiers of the notes, with their parameters.
+    note_codes: list[dict[str, Any]] = Field(default_factory=list)
     runs: list[ReportRun] = Field(default_factory=list)
     #: One entry per repetition: the tool path of both sides and the steps
     #: that only one of them took.
@@ -304,6 +306,7 @@ def build_report_model(
             candidate_variance=comparison_case.candidate_variance if comparison_case else None,
             regressed_metrics=list(comparison_case.regressed_metrics) if comparison_case else [],
             notes=list(comparison_case.notes) if comparison_case else [],
+            note_codes=list(comparison_case.note_codes) if comparison_case else [],
             runs=runs,
         )
         case.trace_diff = _trace_diff(case)

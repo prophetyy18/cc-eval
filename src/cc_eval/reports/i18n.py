@@ -33,6 +33,18 @@ UI: dict[str, dict[str, str]] = {
     "tab_metadata": {"en": "Metadata", "zh": "元数据"},
     # -- top bar ----------------------------------------------------------- #
     "complete": {"en": "complete", "zh": "已完成"},
+    # -- run status -------------------------------------------------------- #
+    "run_status_success": {"en": "success", "zh": "成功"},
+    "run_status_agent_error": {"en": "agent error", "zh": "Agent 报错"},
+    "run_status_timeout": {"en": "timeout", "zh": "超时"},
+    "run_status_budget_exhausted": {"en": "budget exhausted", "zh": "预算耗尽"},
+    "run_status_infra_error": {"en": "infra error", "zh": "基础设施错误"},
+    "run_status_aborted": {"en": "aborted", "zh": "已中止"},
+    # -- case movement ----------------------------------------------------- #
+    "case_status_improved": {"en": "improved", "zh": "改善"},
+    "case_status_regressed": {"en": "regressed", "zh": "退化"},
+    "case_status_unchanged": {"en": "unchanged", "zh": "持平"},
+    "case_status_unknown": {"en": "undetermined", "zh": "无法判定"},
     "incomplete": {"en": "incomplete", "zh": "未完成"},
     "failed": {"en": "failed", "zh": "失败"},
     "generated": {"en": "generated", "zh": "生成于"},
@@ -244,6 +256,13 @@ UI: dict[str, dict[str, str]] = {
         "zh": "在实验文件中、运行之前就已声明。",
     },
     "environment": {"en": "Environment", "zh": "环境"},
+    "env_python": {"en": "python", "zh": "Python 版本"},
+    "env_platform": {"en": "platform", "zh": "操作系统"},
+    "env_release": {"en": "release", "zh": "内核版本"},
+    "env_machine": {"en": "machine", "zh": "架构"},
+    "env_cc_eval_version": {"en": "cc-eval version", "zh": "cc-eval 版本"},
+    "env_generated_at": {"en": "generated at", "zh": "生成时间"},
+    "env_note": {"en": "note", "zh": "备注"},
     "run_ids": {"en": "Run ids", "zh": "运行 ID"},
     "no_run_recorded": {"en": "no run was recorded", "zh": "没有记录到任何运行"},
     "self_contained_note": {

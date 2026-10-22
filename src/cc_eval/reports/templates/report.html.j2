@@ -398,7 +398,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       </span>
       <span class="pill pill-{{ comparison.decision.verdict.value }}">
         <span class="pill-icon" aria-hidden="true">{% if comparison.decision.verdict.value == 'improved' %}▲{% elif comparison.decision.verdict.value == 'regressed' %}▼{% else %}◆{% endif %}</span>
-        {{ comparison.decision.verdict.value }}
+        {{ decision.label }}
       </span>
       <span class="meta-item"><span class="meta-label">{{ L.generated }}</span> {{ metadata.generated_at }}</span>
       <span class="meta-item"><span class="meta-label">{{ L.runtime }}</span> {{ metadata.runtime or 'unknown' }}{% if metadata.model %} · {{ metadata.model }}{% endif %}</span>
@@ -587,7 +587,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <td class="num">{{ card.delta_pct|percent }}</td>
             <td class="tabular">{% if card.ci_low is none %}n/a{% else %}[{{ card.ci_low|number }}, {{ card.ci_high|number }}]{% endif %}</td>
             <td class="num">{{ card.baseline_n }}/{{ card.candidate_n }}</td>
-            <td>{{ card.direction_label }}</td>
+            <td>{{ L[card.direction_key] }}</td>
           </tr>
           {% else %}
           <tr><td colspan="8" class="empty">{{ L.no_metric }}</td></tr>
@@ -724,7 +724,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <td>
               <span class="status-chip {% if case.status == 'improved' %}icon-good{% elif case.status == 'regressed' %}icon-critical{% elif case.status == 'unknown' %}icon-warning{% else %}icon-neutral{% endif %}">
                 <span aria-hidden="true">{% if case.status == 'improved' %}▲{% elif case.status == 'regressed' %}▼{% elif case.status == 'unknown' %}?{% else %}={% endif %}</span>
-                {{ case.status }}
+                {{ L['case_status_' ~ case.status] }}
               </span>
               {% if case.regressed_metrics %}
               <div class="muted" style="font-size:11px">regressed on {{ case.regressed_metrics|join(', ') }}</div>
@@ -758,7 +758,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                     {% for run in runs %}
                     <div class="detail-run">
                       <div class="run-title">
-                        <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status }}</span>
+                        <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status_label }}</span>
                         <span>{{ L.repetition }} {{ run.repetition }}</span>
                         <span class="muted">{{ run.run_id }}</span>
                       </div>
@@ -766,10 +766,10 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                       <div class="error-box">{{ run.error }}</div>
                       {% endif %}
                       {% if run.missing_fields %}
-                      <div class="missing-box">Not reported by the runtime: {{ run.missing_fields|join(', ') }}</div>
+                      <div class="missing-box">{{ L.not_reported_by_runtime }} {{ run.missing_fields|join(', ') }}</div>
                       {% endif %}
                       <dl class="kv-inline">
-                        {% for key, value in run.metrics.items() %}
+                        {% for key, value in run.metrics_labeled %}
                         <dt>{{ key }}</dt><dd class="tabular">{{ value|number }}</dd>
                         {% endfor %}
                         <dt>tokens</dt><dd class="tabular">{% if run.usage.total_tokens is none %}n/a{% else %}{{ run.usage.total_tokens }} ({{ run.usage.source }}){% endif %}</dd>
@@ -868,7 +868,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
           {% for run in case.runs %}
           <div class="trace-run-panel" id="trace-run-{{ case.index }}-{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
             <div class="run-title" style="margin-bottom:10px">
-              <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status }}</span>
+              <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status_label }}</span>
               <span class="badge">{{ run.run_id }}</span>
               <span class="muted">{{ run.variant }} · repetition {{ run.repetition }}</span>
               {% if run.redacted %}<span class="badge badge-missing">{{ L.redacted }}</span>{% endif %}
@@ -878,7 +878,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
               {% endif %}
             </div>
             {% if run.missing_fields %}
-            <div class="missing-box">This runtime did not provide: {{ run.missing_fields|join(', ') }}. Those values are shown as n/a, never as zero.</div>
+            <div class="missing-box">{{ L.not_reported_by_runtime }} {{ run.missing_fields|join(', ') }}</div>
             {% endif %}
             {% set denials = run.permission_denials or [] %}
             {% if denials %}
@@ -972,7 +972,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         <dt>{{ L.seed }}</dt><dd class="tabular">{{ metadata.seed }}</dd>
         <dt>{{ L.order_policy }}</dt><dd>{{ metadata.order_policy }}</dd>
         <dt>{{ L.repetitions }}</dt><dd>{{ metadata.repetitions }}</dd>
-        <dt>{{ L.run_status }}</dt><dd>{% for status, count in metadata.run_statuses.items() %}{{ status }}: {{ count }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</dd>
+        <dt>{{ L.run_status }}</dt><dd>{% for status, count in metadata.run_statuses.items() %}{{ L['run_status_' ~ status] }}: {{ count }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</dd>
       </dl>
     </article>
 
@@ -1031,7 +1031,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <h2>{{ L.environment }}</h2>
       <dl class="kv">
         {% for key, value in metadata.environment.items() %}
-        <dt>{{ key }}</dt><dd class="hash">{{ value }}</dd>
+        <dt>{{ L['env_' ~ key] if ('env_' ~ key) in L else key }}</dt><dd class="hash">{{ value }}</dd>
         {% endfor %}
       </dl>
     </article>
