@@ -1,0 +1,104 @@
+name: intent-doc-quality
+version: v1
+description: >
+  Quality rubric for the cc-workflow `intent` skill.  It scores the intent
+  document(s) the agent wrote, over the sections the skill's own template
+  requires.  The criteria are declared here, before the experiment runs, and
+  are versioned with the rubric file so a historical score can be
+  re-interpreted.  Only deterministic criteria are scored automatically.
+criteria:
+  - id: INTENT_CREATED
+    name: At least one intent document was written
+    weight: 2.0
+    description: The skill must persist the request as an intent document.
+    scorer:
+      type: count_min
+      pattern: "(?m)^id:\\s*INT-\\d{3}"
+      min_count: 1
+
+  - id: DECOMPOSITION
+    name: The request was decomposed into exactly two intents
+    weight: 3.0
+    description: >
+      Pre-declared judgement (see benchmarks/intent_skill/cases/INT-S001/oracle.yaml):
+      the three statements describe two user problems, so exactly two intent
+      documents must exist.  One intent per input line is a failure; a single
+      merged intent that swallows the status problem is a failure too.
+    scorer:
+      type: count_min
+      pattern: "(?m)^id:\\s*INT-\\d{3}"
+      min_count: 2
+
+  - id: NOT_OVERFRAGMENTED
+    name: The decomposition did not explode into one intent per statement
+    weight: 3.0
+    description: Three statements must not become three intents.
+    scorer:
+      type: count_max
+      pattern: "(?m)^id:\\s*INT-\\d{3}"
+      max_count: 2
+
+  - id: FRONTMATTER
+    name: The frontmatter carries id, title and status
+    weight: 1.0
+    description: The template requires id, title, status, created and updated.
+    scorer:
+      type: regex
+      pattern: "(?ms)^---\\s*\\n.*?^id:\\s*INT-\\d{3}.*?^title:\\s*\\S+.*?^status:\\s*\\S+.*?^---\\s*$"
+
+  - id: ORIGINAL_INTENT
+    name: The original request is recorded verbatim
+    weight: 1.0
+    description: The template requires the user's own words, not a paraphrase.
+    scorer:
+      type: keyword_present
+      keywords:
+        - "# Original Intent"
+
+  - id: CLARIFIED_INTENT
+    name: The clarified intent is recorded
+    weight: 1.0
+    scorer:
+      type: keyword_present
+      keywords:
+        - "# Clarified Intent"
+
+  - id: CONSTRAINTS
+    name: Constraints and success criteria are recorded
+    weight: 1.0
+    scorer:
+      type: keyword_present
+      keywords:
+        - "# Constraints and Success Criteria"
+
+  - id: SPEC_INPUT
+    name: A self-contained spec hand-off brief is written
+    weight: 1.0
+    scorer:
+      type: keyword_present
+      keywords:
+        - "# Spec Input"
+
+  - id: ASSUMPTIONS_MARKED
+    name: Agent-inferred assumptions are labelled
+    weight: 1.0
+    description: >
+      The skill has no user to ask, so anything it inferred must be marked
+      "(assumed)" instead of being presented as a confirmed decision.
+    scorer:
+      type: keyword_present
+      keywords:
+        - "(assumed"
+        - "假设"
+
+  - id: NO_UNLABELLED_SPECULATION
+    name: No unmarked speculation
+    weight: 0.5
+    description: The agent must not present guesses as confirmed facts.
+    scorer:
+      type: forbidden_pattern
+      patterns:
+        - "(?i)\\bprobably\\b"
+        - "(?i)\\bpresumably\\b"
+        - "(?i)\\bI think\\b"
+        - "(?i)\\bprobably the user\\b"

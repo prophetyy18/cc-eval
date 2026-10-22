@@ -71,21 +71,29 @@ class Workspace:
             return None
         return target.read_text(encoding="utf-8", errors="replace")
 
-    def collect_outputs(self, subdir: str = "out") -> dict[str, str]:
-        """Collect every produced file under ``subdir`` (redacted)."""
-        base = self.root / subdir
-        if not base.exists():
-            return {}
+    def collect_outputs(self, paths: str | list[str] = "out") -> dict[str, str]:
+        """Collect every produced file under the given paths (redacted).
+
+        ``paths`` are relative to the workspace root.  The default collects
+        ``out/``; a case whose skill writes elsewhere (for example
+        ``docs/intents/``) declares the paths it produces in
+        :attr:`~cc_eval.core.models.TaskBundle.output_paths`.
+        """
+        wanted = [paths] if isinstance(paths, str) else list(paths)
         collected: dict[str, str] = {}
-        for path in sorted(base.rglob("*")):
-            if not path.is_file():
+        for subdir in wanted:
+            base = self.root / subdir
+            if not base.exists():
                 continue
-            rel = str(path.relative_to(self.root))
-            try:
-                text = path.read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-            collected[rel] = redact_text(text)[0]
+            for path in sorted(base.rglob("*")):
+                if not path.is_file():
+                    continue
+                rel = str(path.relative_to(self.root))
+                try:
+                    text = path.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    continue
+                collected[rel] = redact_text(text)[0]
         return collected
 
 

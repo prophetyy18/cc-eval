@@ -92,6 +92,12 @@ class ClaudeRunner(BaseRunner):
         cmd += ["--max-turns", str(config.max_turns)]
         cmd += ["--session-id", str(uuid.uuid4())]
 
+        # The tools the task is allowed to use.  Without this a skill that
+        # needs Bash or Write would be denied in a non-interactive run,
+        # because there is nobody to answer the permission prompt.
+        if task.allowed_tools:
+            cmd += ["--allowedTools", ",".join(task.allowed_tools)]
+
         setting_sources = str(config.runner_args.get("setting_sources", "project"))
         if setting_sources:
             cmd += ["--setting-sources", setting_sources]
@@ -207,7 +213,7 @@ class ClaudeRunner(BaseRunner):
                 + (exec_result.stderr.strip()[:500] or "<empty>")
             )
 
-        result.output_files = workspace.collect_outputs()
+        result.output_files = workspace.collect_outputs(task.output_paths)
         if exec_result.stderr.strip():
             result.provenance["stderr_tail"] = exec_result.stderr.strip()[-2000:]
         return result

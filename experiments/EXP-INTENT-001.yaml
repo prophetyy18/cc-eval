@@ -1,0 +1,77 @@
+id: EXP-INTENT-001
+title: Does the intent skill decompose a support request into the right intents?
+hypothesis: >
+  The candidate intent skill splits a three-statement support request into
+  the two user problems it actually contains (finding an order, and
+  unambiguous order statuses) instead of one intent per statement.
+independent_variable: >
+  The implementation of the `intent` skill in
+  .claude/skills/intent/SKILL.md (and the reference files it pulls in).  The
+  two framework trees are the same repository at two commits, so the diff
+  between them is exactly the change under test.
+baseline:
+  name: baseline
+  framework:
+    type: git
+    repository: /home/lpdev/cc-workflow
+    ref: main
+  config: {}
+  expected_capabilities:
+    - intent
+candidate:
+  name: candidate
+  framework:
+    type: git
+    repository: /home/lpdev/cc-workflow
+    # Put your branch here: the branch that carries the skill change.
+    ref: feat/your-intent-change
+  config: {}
+  expected_capabilities:
+    - intent
+controls:
+  runtime: claude
+  # Pin the model.  It is a control: both sides must run on the same one.
+  model: null
+  benchmark: benchmarks/intent_skill
+  dataset_version: v1
+  evaluator: "rubric:intent-doc-v1"
+  repetitions: 3
+  max_budget_usd: 2.0
+  timeout_sec: 600
+  seed: 20240101
+  order: alternating
+metrics:
+  - rubric_score
+  - total_tokens
+expected_changes:
+  - ".claude/skills/intent/*"
+decision_rules:
+  primary_metric: rubric_score
+  direction: higher_is_better
+  min_delta: 0.05
+  min_repetitions: 3
+  case_delta_threshold: 0.0
+  guard_metrics:
+    - total_tokens
+  guard_tolerance: 0.5
+  max_regressed_cases: 0
+  require_confound_free: true
+  require_verified_capabilities:
+    - intent
+  confidence:
+    method: paired_bootstrap
+    alpha: 0.05
+    iterations: 2000
+    seed: 20240101
+framework_change: >
+  The change under test is a modification of the intent skill: how it decides
+  that one user request contains several intents, and how it writes them
+  down.
+references:
+  - docs/adr/0002-single-variable-discipline.md
+notes: >
+  The intent skill normally asks the user clarifying questions.  A batch run
+  has nobody to answer, so the case tells the agent to mark its assumptions
+  inline; the rubric checks that it did.  If your change is *about* the
+  clarification step itself, this harness cannot measure it - the
+  interaction is removed on both sides.

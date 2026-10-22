@@ -22,7 +22,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..core.models import BenchmarkCase, EvaluationResult, RunResult
-from .base import empty_result
+from .base import empty_result, output_text_for
 
 RUBRIC_VERSION = "rubric-v1"
 
@@ -35,6 +35,7 @@ class Scorer(BaseModel):
     pattern: str | None = None
     patterns: list[str] = Field(default_factory=list)
     min_count: int = 1
+    max_count: int | None = None
     field: str | None = None
 
 
@@ -89,7 +90,8 @@ class RubricEvaluator:
         self.version = f"{RUBRIC_VERSION}+{rubric.name}-{rubric.version}"
 
     def evaluate(self, case: BenchmarkCase, result: RunResult) -> EvaluationResult:
-        content = result.output_files.get(case.bundle.expected_output_path, "")
+        wanted = case.bundle.output_glob or case.bundle.expected_output_path
+        content = output_text_for(result, wanted)
         text = content or result.output_text or ""
         document: Any = None
         try:
@@ -151,6 +153,7 @@ class RubricEvaluator:
             evaluator=self.name,
             evaluator_version=self.version,
             metrics=metrics,
+            details=details,
             notes=notes,
         )
 
@@ -194,6 +197,12 @@ def _score_criterion(criterion: Criterion, text: str, document: Any) -> float | 
             return None
         found = len(re.findall(scorer.pattern, text, re.IGNORECASE))
         return 1.0 if found >= scorer.min_count else 0.0
+
+    if kind == "count_max":
+        if not scorer.pattern or scorer.max_count is None:
+            return None
+        found = len(re.findall(scorer.pattern, text, re.IGNORECASE))
+        return 1.0 if found <= scorer.max_count else 0.0
 
     if kind == "json_field_present":
         if not scorer.field:

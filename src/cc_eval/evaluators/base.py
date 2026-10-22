@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from fnmatch import fnmatch
 from typing import Any, Protocol, runtime_checkable
 
 from ..core.models import BenchmarkCase, EvaluationResult, RunResult
@@ -20,6 +21,27 @@ class Evaluator(Protocol):
 
     def evaluate(self, case: BenchmarkCase, result: RunResult) -> EvaluationResult:
         ...
+
+
+def output_text_for(result: RunResult, expected_path: str) -> str:
+    """The text of the expected output file.
+
+    ``expected_path`` may be an exact path (``out/result.json``) or a glob
+    pattern (``docs/intents/*/INTENT.md``) - a skill that decides its own
+    file names cannot promise an exact path.  Matching files are joined, so
+    a case can score "every intent document the agent wrote".
+    """
+    files = result.output_files or {}
+    content = files.get(expected_path)
+    if content is not None:
+        return content
+    if any(char in expected_path for char in "*?["):
+        matches = [
+            value for key, value in sorted(files.items()) if fnmatch(key, expected_path)
+        ]
+        if matches:
+            return "\n\n".join(matches)
+    return ""
 
 
 def extract_findings(result: RunResult, expected_path: str) -> tuple[list[dict], str | None]:

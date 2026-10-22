@@ -246,7 +246,7 @@ class FakeRunner(BaseRunner):
 
         result.status = "success"
         result.output_text = document["summary"]
-        result.output_files = workspace.collect_outputs()
+        result.output_files = workspace.collect_outputs(task.output_paths)
         result.duration_ms = 0
         result.runtime = RuntimeInfo(
             name=self.name,

@@ -1,0 +1,8 @@
+name: intent-skill
+version: v1
+description: 'Cases for the cc-workflow `intent` skill: how a raw user request is
+  decomposed into intent documents and written down as INTENT.md.
+
+  '
+cases:
+- INT-S001

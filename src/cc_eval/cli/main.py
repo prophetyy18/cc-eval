@@ -815,6 +815,95 @@ def compare_command(
     typer.echo(f"json report: {report_path}")
 
 
+@app.command("serve")
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Interface to bind (0.0.0.0 exposes it)."),
+    port: int = typer.Option(30000, "--port", "-p"),
+    root: Optional[str] = RootOption,
+    token: str = typer.Option(
+        "", "--token", help="Read token.  Defaults to $CC_EVAL_DASHBOARD_TOKEN."
+    ),
+    admin_token: str = typer.Option(
+        "",
+        "--admin-token",
+        help="Admin token (authoring + running).  Defaults to $CC_EVAL_DASHBOARD_ADMIN_TOKEN.",
+    ),
+    allow_write: bool = typer.Option(
+        False,
+        "--allow-write",
+        help="Allow authoring cases and starting runs (needs an admin token).",
+    ),
+    tls_cert: str = typer.Option("", "--tls-cert", help="Certificate for HTTPS."),
+    tls_key: str = typer.Option("", "--tls-key", help="Private key for HTTPS."),
+    allow_framework_root: Optional[list[str]] = typer.Option(
+        None,
+        "--allow-framework-root",
+        help=(
+            "A directory a run request may take its framework from.  Repeatable.  "
+            "Defaults to your home directory."
+        ),
+    ),
+) -> None:
+    """Start the cc-eval console.
+
+    The console authors test cases, starts experiments and streams the
+    results.  It binds to 127.0.0.1 by default; exposing it needs a token.
+    """
+    import secrets
+
+    from ..dashboard.server import ConsoleConfig, ConsoleServer, tokens_from_env
+
+    paths = _paths(root)
+    paths.ensure()
+
+    env_viewer, env_admin = tokens_from_env()
+    viewer_token = token or env_viewer
+    admin_token = admin_token or env_admin
+    if not viewer_token and not admin_token:
+        viewer_token = secrets.token_urlsafe(24)
+        typer.secho(
+            f"no token configured; generated a read token: {viewer_token}", fg=typer.colors.YELLOW
+        )
+    if allow_write and not admin_token:
+        typer.secho(
+            "--allow-write needs an admin token (--admin-token or "
+            "$CC_EVAL_DASHBOARD_ADMIN_TOKEN)",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    roots = [Path(p).expanduser().resolve() for p in (allow_framework_root or [])]
+    if not roots:
+        roots = [Path.home().resolve()]
+
+    config = ConsoleConfig(
+        host=host,
+        port=port,
+        viewer_token=viewer_token,
+        admin_token=admin_token,
+        allow_write=allow_write,
+        tls_cert=tls_cert,
+        tls_key=tls_key,
+        allowed_framework_roots=roots,
+    )
+    try:
+        server = ConsoleServer(paths, config)
+    except SystemExit as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
+
+    if host not in {"127.0.0.1", "::1", "localhost"}:
+        typer.secho(
+            f"the console is bound to {host} and is reachable from the network. "
+            "Everything it serves (agent output, traces, case files) is visible to "
+            "anyone who can reach it and authenticate.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+    server.serve_forever()
+
+
 @app.command("report")
 def report_command(
     experiment_id: str = typer.Argument(...),

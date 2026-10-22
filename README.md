@@ -97,6 +97,7 @@ specification review started inventing defects.  The report names the case.
 | `cc-eval compare EXP-001` | recompute the comparison from the stored runs |
 | `cc-eval report EXP-001 [--format html\|md\|json\|both\|all]` | render the report (HTML by default) |
 | `cc-eval render EXP-001 [--format html]` | re-render the report from the stored runs, without running anything |
+| `cc-eval serve [--host 0.0.0.0] [--port 30000]` | start the console: author cases, run experiments, watch the results live |
 | `cc-eval benchmark validate PATH` | check a dataset's structure, ground truth and hashes |
 | `cc-eval registry list` / `show` / `reports` | inspect the recorded history and the reports it links to |
 | `cc-eval runner list` | probe which runtimes are usable on this machine |
@@ -253,6 +254,97 @@ cc-eval itself generated.
 
 ---
 
+## The console
+
+`cc-eval serve` starts a local web application over the workspace: it authors
+test cases, starts experiments, streams the results as they happen, and shows
+the history.
+
+```bash
+cc-eval serve                                    # http://127.0.0.1:30000
+cc-eval serve --host 0.0.0.0 --port 30000 \
+    --allow-write --admin-token "$ADMIN"         # reachable from the network
+```
+
+**What it does not do:** it does not score.  The console is an *observation*
+console - it shows what the agent produced, what tools it called, how long it
+took and how many tokens it used.  There is no verdict and no "which side is
+better"; that is the job of `cc-eval compare`, which is unchanged.
+
+### The console writes ordinary case files
+
+What you type in the form becomes a normal cc-eval case:
+
+```
+benchmarks/<type>/cases/<ID>/
+├── input/<file>     the text you typed
+├── task.yaml        generated from the test type
+└── oracle.yaml      optional
+```
+
+The console is an **editor**, not a second source of truth.  A case stays a
+file: it has a content hash, it is diffable in git, and the dataset hash
+travels with every run - so you can always tell whether two runs used the
+same questions.
+
+### Tokens
+
+| Token | Grants | How to set |
+|---|---|---|
+| viewer | read the dashboard, the runs, the reports | `--token` or `CC_EVAL_DASHBOARD_TOKEN` |
+| admin | author cases, start runs | `--admin-token` or `CC_EVAL_DASHBOARD_ADMIN_TOKEN` |
+
+* Binding to a **public** interface without a token **refuses to start**.
+* `--allow-write` without an admin token **refuses to start**.
+* The session cookie is signed, `HttpOnly` and `SameSite=Strict`, and expires
+  after 12 hours.  Failed logins are rate limited.
+* A run request may only take its framework from an allowed root
+  (`--allow-framework-root`, defaults to your home directory), so a caller
+  cannot point the agent at an arbitrary directory.
+
+### Exposing it to the internet
+
+The console can read your run records (agent output, traces), write case
+files and start real agent runs.  If you bind it to `0.0.0.0`:
+
+* **use HTTPS** - either `--tls-cert`/`--tls-key` directly, or put a reverse
+  proxy (Caddy, nginx) in front of it;
+* **use a long random admin token** and rotate it;
+* remember that the redaction in cc-eval covers credentials, not business
+  content: your prompts, code fragments and generated documents are visible
+  to anyone who can authenticate.
+
+### Adding a kind of test
+
+A new kind of test is a registration, not a code change:
+
+```python
+from cc_eval.dashboard.types import Field, OutputSpec, TestType, register
+
+register(TestType(
+    name="intent-skill",
+    title="Intent 拆解",
+    benchmark=Path("benchmarks/intent_skill"),
+    form=[Field("request", "Intent 输入", "textarea", required=True)],
+    outputs=[OutputSpec("intent_doc", "INTENT.md",
+                        collect="docs/intents/*/INTENT.md",
+                        view="markdown",
+                        count_pattern=r"(?m)^id:\s*INT-\d{3}",
+                        count_label="intent 数量")],
+    prompt_template="...",
+    input_files={"request": "request.md"},
+    output_paths=["docs/intents"],
+    allowed_tools=["Read", "Write", "Bash(mkdir:*)"],
+    case_prefix="INT-S",
+    task_type="intent_capture",
+))
+```
+
+The form drives the authoring UI, the output spec drives what the console
+collects and shows, and the runner stays generic.
+
+---
+
 ## Security
 
 The runner executes real tools and shell commands, so the boundaries matter.
@@ -337,6 +429,7 @@ Layout:
 ```
 src/cc_eval/       core/ runners/ evaluators/ datasets/ traces/ comparison/ reports/ isolation/ cli/
                   reports/templates/report.html.j2   the HTML report template
+                  dashboard/         the console: authoring, live runs, the API
 benchmarks/        intent/ spec/ cross_module/ requirements/ suite/
 experiments/       EXP-001.yaml EXP-002.yaml EXP-003.yaml
 examples/framework/ baseline/ candidate/ candidate_aggressive/ spec-review-only/

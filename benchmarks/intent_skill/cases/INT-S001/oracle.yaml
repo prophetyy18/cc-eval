@@ -1,0 +1,56 @@
+# Ground truth for INT-S001.  This file is NEVER materialised into an agent
+# workspace.
+#
+# The judgement encoded here was made BEFORE the runs: the request contains
+# three statements but only TWO user problems.
+#
+#   * "manual paging to find an order" and "search an order by phone number"
+#     are the same user problem - a support agent cannot find an order.  They
+#     belong to ONE intent (phone search is a way of solving the same goal).
+#   * "new colleagues confuse pending-shipment and shipped" is a different
+#     problem - the status vocabulary is ambiguous and the report does not
+#     reconcile.  It is its own intent.
+#
+# A skill that emits one intent per input line produces three intents and
+# loses the merge.
+expected_entities:
+  - id: INT-A
+    category: intent
+    severity: medium
+    description: >
+      A support agent can find a customer's order in the order list: the list
+      is searchable (by phone number) instead of being paged through by hand.
+    evidence: >
+      "客服每天要手动翻页找订单" / "希望支持按手机号搜订单"
+    match_keywords:
+      - 订单
+      - order
+      - 手机号
+      - phone
+      - 翻页
+      - 分页
+      - 搜索
+      - search
+      - 检索
+
+  - id: INT-B
+    category: intent
+    severity: medium
+    description: >
+      The order statuses are unambiguous and the exported report reconciles
+      with reality: pending-shipment and shipped are not confused.
+    evidence: >
+      "新人经常把'待发货'和'已发货'搞混，导出的报表和实际对不上账"
+    match_keywords:
+      - 待发货
+      - 已发货
+      - 状态
+      - status
+      - 报表
+      - 对账
+      - 导出
+notes: >
+  Two intents.  The rubric (rubrics/intent-doc-v1.yaml) encodes the same
+  judgement as deterministic criteria over the produced INTENT.md, because
+  the intent skill writes Markdown, not the findings JSON the deterministic
+  matcher consumes.

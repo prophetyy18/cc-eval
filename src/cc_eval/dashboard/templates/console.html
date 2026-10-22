@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-eval console</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --surface: #fcfcfb;
+  --plane: #f4f4f1;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --border: rgba(11,11,11,.12);
+  --accent: #2a78d6;
+  --good: #0ca30c;
+  --critical: #d03b3b;
+  --warning: #fab219;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #1a1a19;
+    --plane: #0d0d0d;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,.12);
+    --accent: #3987e5;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--plane); color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+  font-size: 14px; line-height: 1.55;
+}
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
+h1 { font-size: 17px; }
+h2 { font-size: 15px; margin-bottom: 12px; }
+h3 { font-size: 13px; margin-bottom: 8px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button {
+  cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+  color: var(--ink); border-radius: 8px; padding: 6px 12px;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { color: var(--critical); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input[type=text], input[type=number], input[type=password], textarea, select {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px;
+}
+textarea { min-height: 120px; resize: vertical; font-family: inherit; }
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.field { margin-bottom: 12px; }
+.topbar {
+  display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10; flex-wrap: wrap;
+}
+.brand { font-weight: 700; letter-spacing: -.02em; }
+.brand span { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 12px; }
+.spacer { margin-left: auto; }
+.tabs { display: flex; gap: 2px; }
+.tab {
+  background: none; border: 0; border-bottom: 2px solid transparent;
+  border-radius: 0; padding: 8px 12px; color: var(--ink-2);
+}
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+main { max-width: 1180px; margin: 0 auto; padding: 20px; }
+.panel { display: flex; flex-direction: column; gap: 16px; }
+.panel[hidden] { display: none; }
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px;
+}
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+  border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px;
+}
+.pill-ok { border-color: var(--good); }
+.pill-err { border-color: var(--critical); }
+.pill-run { border-color: var(--accent); }
+pre {
+  background: var(--plane); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; overflow: auto; max-height: 420px; margin: 0;
+  font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word;
+}
+details summary { cursor: pointer; color: var(--ink-2); }
+.login-wrap { max-width: 420px; margin: 12vh auto; }
+.error { color: var(--critical); font-size: 13px; min-height: 20px; }
+.case-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow: auto; }
+.case-item { display: flex; gap: 8px; align-items: baseline; padding: 4px 6px; border-radius: 6px; }
+.case-item:hover { background: var(--plane); }
+.case-item code { font-family: var(--mono); font-size: 12px; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+.log { font-family: var(--mono); font-size: 11.5px; max-height: 260px; overflow: auto; }
+.log div { padding: 1px 0; border-bottom: 1px solid var(--grid); }
+</style>
+</head>
+<body>
+
+<div id="login" class="login-wrap" hidden>
+  <div class="card">
+    <h1>cc-eval console</h1>
+    <p class="muted small">输入 token 登录。</p>
+    <div class="field" style="margin-top:12px">
+      <label for="token">Token</label>
+      <input type="password" id="token" autocomplete="current-password">
+    </div>
+    <div class="error" id="login-error"></div>
+    <button class="primary" id="login-button">登录</button>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <div class="topbar">
+    <div class="brand">cc-eval console <span id="role-badge"></span></div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-panel="run" aria-selected="true">运行</button>
+      <button class="tab" role="tab" data-panel="cases" aria-selected="false">用例</button>
+      <button class="tab" role="tab" data-panel="history" aria-selected="false">历史</button>
+    </nav>
+    <div class="spacer"></div>
+    <button id="logout" class="small">退出</button>
+  </div>
+
+  <main>
+    <!-- ============================ RUN ============================ -->
+    <section class="panel" id="panel-run">
+      <div class="card">
+        <h2>开始一次运行</h2>
+        <div class="grid">
+          <div>
+            <div class="field">
+              <label for="test-type">测试类型</label>
+              <select id="test-type"></select>
+            </div>
+            <div class="field">
+              <label>用例</label>
+              <div class="case-list" id="case-picker"></div>
+            </div>
+            <div class="field">
+              <label for="repetitions">重复次数</label>
+              <input type="number" id="repetitions" value="1" min="1" max="10">
+            </div>
+            <div class="field">
+              <label for="model">模型（两侧必须相同）</label>
+              <input type="text" id="model" placeholder="留空 = 用 runner 默认">
+            </div>
+          </div>
+          <div>
+            <div class="card" style="padding:12px">
+              <h3>Baseline</h3>
+              <div class="field">
+                <label for="b-repo">仓库路径</label>
+                <input type="text" id="b-repo" placeholder="/home/you/cc-workflow">
+              </div>
+              <div class="field">
+                <label for="b-ref">ref（分支或 commit）</label>
+                <input type="text" id="b-ref" placeholder="main">
+              </div>
+            </div>
+            <div class="card" style="padding:12px;margin-top:10px">
+              <h3>Candidate</h3>
+              <div class="field">
+                <label for="c-repo">仓库路径</label>
+                <input type="text" id="c-repo" placeholder="/home/you/cc-workflow">
+              </div>
+              <div class="field">
+                <label for="c-ref">ref（你的改动所在分支）</label>
+                <input type="text" id="c-ref" placeholder="feat/my-change">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="primary" id="start">开始运行</button>
+          <span class="small muted" id="run-status"></span>
+        </div>
+        <div class="error" id="run-error"></div>
+      </div>
+
+      <div class="card" id="live-card" hidden>
+        <h2>实时结果</h2>
+        <table id="live-table">
+          <thead><tr><th>Run</th><th>变体</th><th>用例</th><th>状态</th><th>耗时</th><th>Token</th><th>产出</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="log" id="live-log" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card" id="output-card" hidden>
+        <h2>产出</h2>
+        <div class="split" id="output-split"></div>
+      </div>
+    </section>
+
+    <!-- ============================ CASES ============================ -->
+    <section class="panel" id="panel-cases" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2>用例</h2>
+          <div class="row">
+            <select id="cases-type" style="width:auto"></select>
+            <button id="new-case">新建用例</button>
+          </div>
+        </div>
+        <table id="cases-table"><thead><tr><th>ID</th><th>标题</th><th>标签</th><th>更新时间</th><th></th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card" id="case-form-card" hidden>
+        <h2 id="case-form-title">新建用例</h2>
+        <div id="case-form-fields"></div>
+        <div class="row">
+          <button class="primary" id="save-case">保存</button>
+          <button id="cancel-case">取消</button>
+          <span class="small muted" id="case-form-status"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ HISTORY ============================ -->
+    <section class="panel" id="panel-history" hidden>
+      <div class="card">
+        <h2>实验历史</h2>
+        <table id="history-table">
+          <thead><tr><th>ID</th><th>标题</th><th>结论</th><th>数据集</th><th>更新时间</th><th>报告</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var state = { types: [], type: null, cases: [], selected: new Set(), runId: null, editing: null };
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === "text") { node.textContent = attrs[k]; }
+      else if (k === "html") { node.innerHTML = attrs[k]; }
+      else { node.setAttribute(k, attrs[k]); }
+    });
+    (children || []).forEach(function (c) { if (c) { node.appendChild(c); } });
+    return node;
+  }
+  function api(path, options) {
+    options = options || {};
+    options.headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+    options.credentials = "same-origin";
+    return fetch(path, options).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (data) {
+        if (!response.ok) { throw new Error(data.error || ("HTTP " + response.status)); }
+        return data;
+      });
+    });
+  }
+
+  // ----------------------------------------------------------------- auth --
+  function showLogin() {
+    $("login").hidden = false;
+    $("app").hidden = true;
+    $("token").focus();
+  }
+  function showApp(role) {
+    $("login").hidden = true;
+    $("app").hidden = false;
+    $("role-badge").textContent = role === "admin" ? "admin（可写）" : "viewer（只读）";
+    var writable = role === "admin";
+    ["test-type", "case-picker", "repetitions", "model", "b-repo", "b-ref", "c-repo", "c-ref", "start", "new-case"]
+      .forEach(function (id) { $(id).disabled = !writable; });
+    $("start").title = writable ? "" : "只读模式：需要 admin token 才能发起运行";
+  }
+  $("login-button").addEventListener("click", function () {
+    $("login-error").textContent = "";
+    api("/api/login", { method: "POST", body: JSON.stringify({ token: $("token").value }) })
+      .then(function (data) { showApp(data.role); bootstrap(); })
+      .catch(function (err) { $("login-error").textContent = err.message; });
+  });
+  $("logout").addEventListener("click", function () {
+    api("/api/logout", { method: "POST" }).finally(function () { location.reload(); });
+  });
+
+  // ----------------------------------------------------------------- tabs --
+  document.querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-selected", "false"); });
+      tab.setAttribute("aria-selected", "true");
+      ["run", "cases", "history"].forEach(function (name) {
+        $("panel-" + name).hidden = name !== tab.dataset.panel;
+      });
+      if (tab.dataset.panel === "history") { loadHistory(); }
+      if (tab.dataset.panel === "cases") { loadCases(); }
+    });
+  });
+
+  // -------------------------------------------------------------- bootstrap --
+  function bootstrap() {
+    api("/api/test-types").then(function (data) {
+      state.types = data.test_types;
+      [ $("test-type"), $("cases-type") ].forEach(function (select) {
+        select.innerHTML = "";
+        state.types.forEach(function (t) {
+          select.appendChild(el("option", { value: t.name, text: t.title }));
+        });
+      });
+      if (state.types.length) { setType(state.types[0].name); }
+    }).catch(function (err) { $("run-error").textContent = err.message; });
+  }
+  function setType(name) {
+    state.type = state.types.filter(function (t) { return t.name === name; })[0] || null;
+    $("test-type").value = name;
+    $("cases-type").value = name;
+    state.selected = new Set();
+    loadCases();
+  }
+  $("test-type").addEventListener("change", function () { setType(this.value); });
+  $("cases-type").addEventListener("change", function () { setType(this.value); });
+
+  function loadCases() {
+    if (!state.type) { return; }
+    api("/api/test-types/" + state.type.name + "/cases").then(function (data) {
+      state.cases = data.cases;
+      renderCasePicker();
+      renderCaseTable();
+    });
+  }
+  function renderCasePicker() {
+    var box = $("case-picker");
+    box.innerHTML = "";
+    state.cases.forEach(function (item) {
+      var input = el("input", { type: "checkbox" });
+      input.checked = state.selected.has(item.case_id);
+      input.addEventListener("change", function () {
+        if (input.checked) { state.selected.add(item.case_id); } else { state.selected.delete(item.case_id); }
+      });
+      var label = el("label", { style: "display:flex;gap:8px;align-items:baseline;margin:0" });
+      label.appendChild(input);
+      label.appendChild(el("code", { text: item.case_id }));
+      if (item.title) { label.appendChild(el("span", { class: "muted small", text: item.title })); }
+      box.appendChild(el("div", { class: "case-item" }, [label]));
+    });
+    if (!state.cases.length) {
+      box.appendChild(el("p", { class: "muted small", text: "还没有用例 —— 去「用例」页新建一个。" }));
+    }
+  }
+  function renderCaseTable() {
+    var body = $("cases-table").querySelector("tbody");
+    body.innerHTML = "";
+    state.cases.forEach(function (item) {
+      var actions = el("td");
+      var edit = el("button", { class: "small", text: "编辑" });
+      edit.addEventListener("click", function () { openCaseForm(item); });
+      var del = el("button", { class: "small danger", text: "删除" });
+      del.addEventListener("click", function () {
+        if (!confirm("删除用例 " + item.case_id + "？")) { return; }
+        api("/api/test-types/" + state.type.name + "/cases/" + item.case_id, { method: "DELETE" })
+          .then(loadCases);
+      });
+      actions.appendChild(edit);
+      actions.appendChild(el("span", { text: " " }));
+      actions.appendChild(del);
+      body.appendChild(el("tr", {}, [
+        el("td", {}, [el("code", { text: item.case_id })]),
+        el("td", { text: item.title || "" }),
+        el("td", { class: "muted small", text: (item.tags || []).join(", ") }),
+        el("td", { class: "muted small", text: (item.updated_at || "").slice(0, 19).replace("T", " ") }),
+        actions
+      ]));
+    });
+  }
+
+  // -------------------------------------------------------------- authoring --
+  function openCaseForm(item) {
+    state.editing = item || null;
+    $("case-form-card").hidden = false;
+    $("case-form-title").textContent = item ? ("编辑用例 " + item.case_id) : "新建用例";
+    var box = $("case-form-fields");
+    box.innerHTML = "";
+    state.type.form.forEach(function (field) {
+      var wrap = el("div", { class: "field" });
+      wrap.appendChild(el("label", { text: field.label + (field.required ? " *" : "") }));
+      var value = item && item.values ? item.values[field.key] : (field.default || "");
+      var input;
+      if (field.type === "textarea") {
+        input = el("textarea", {});
+        input.value = value || "";
+      } else if (field.type === "tags") {
+        input = el("input", { type: "text", placeholder: "逗号分隔" });
+        input.value = (value || []).join(", ");
+      } else if (field.type === "number") {
+        input = el("input", { type: "number" });
+        input.value = value === null || value === undefined ? "" : value;
+      } else {
+        input = el("input", { type: "text" });
+        input.value = value === undefined || value === null ? "" : value;
+      }
+      input.dataset.key = field.key;
+      input.dataset.ftype = field.type;
+      wrap.appendChild(input);
+      if (field.help) { wrap.appendChild(el("div", { class: "muted small", text: field.help })); }
+      box.appendChild(wrap);
+    });
+    $("case-form-card").scrollIntoView({ behavior: "smooth" });
+  }
+  $("new-case").addEventListener("click", function () { openCaseForm(null); });
+  $("cancel-case").addEventListener("click", function () { $("case-form-card").hidden = true; });
+  $("save-case").addEventListener("click", function () {
+    var values = {};
+    $("case-form-fields").querySelectorAll("[data-key]").forEach(function (input) {
+      if (input.dataset.ftype === "tags") {
+        values[input.dataset.key] = input.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+      } else {
+        values[input.dataset.key] = input.value;
+      }
+    });
+    $("case-form-status").textContent = "保存中…";
+    api("/api/test-types/" + state.type.name + "/cases", {
+      method: "POST",
+      body: JSON.stringify({
+        case_id: state.editing ? state.editing.case_id : null,
+        values: values
+      })
+    }).then(function (data) {
+      $("case-form-status").textContent = "已保存 " + data.case.case_id;
+      $("case-form-card").hidden = true;
+      loadCases();
+    }).catch(function (err) { $("case-form-status").textContent = err.message; });
+  });
+
+  // ------------------------------------------------------------------ runs --
+  $("start").addEventListener("click", function () {
+    $("run-error").textContent = "";
+    var body = {
+      test_type: state.type.name,
+      case_ids: Array.from(state.selected),
+      repetitions: parseInt($("repetitions").value || "1", 10),
+      model: $("model").value || null,
+      baseline: { type: "git", repository: $("b-repo").value, ref: $("b-ref").value },
+      candidate: { type: "git", repository: $("c-repo").value, ref: $("c-ref").value }
+    };
+    $("start").disabled = true;
+    $("live-card").hidden = false;
+    $("live-table").querySelector("tbody").innerHTML = "";
+    $("live-log").innerHTML = "";
+    api("/api/runs", { method: "POST", body: JSON.stringify(body) }).then(function (data) {
+      state.runId = data.run_id;
+      $("run-status").textContent = "运行 " + data.run_id;
+      listen(data.run_id);
+    }).catch(function (err) {
+      $("run-error").textContent = err.message;
+      $("start").disabled = false;
+    });
+  });
+
+  function listen(runId) {
+    var source = new EventSource("/api/runs/" + runId + "/events");
+    source.onmessage = function (event) {
+      var data = JSON.parse(event.data);
+      log(data);
+      if (data.type === "run_planned") { addLiveRow(data); }
+      if (data.type === "run_finished") {
+        finishLiveRow(data);
+        showOutputs(data);
+      }
+      if (data.type === "experiment_finished" || data.type === "experiment_failed") {
+        source.close();
+        $("start").disabled = false;
+        $("run-status").textContent = data.type === "experiment_failed"
+          ? ("失败：" + data.error) : ("完成：" + data.runs + " 个 run");
+      }
+    };
+    source.onerror = function () {
+      $("run-status").textContent = "连接中断";
+      source.close();
+    };
+  }
+  function log(data) {
+    var line = data.type + " " + (data.run_id || data.run || "") +
+      (data.status ? " [" + data.status + "]" : "") +
+      (data.error ? " " + data.error : "");
+    $("live-log").appendChild(el("div", { text: line }));
+    $("live-log").scrollTop = $("live-log").scrollHeight;
+  }
+  function addLiveRow(data) {
+    var body = $("live-table").querySelector("tbody");
+    var row = el("tr", { id: "row-" + data.run_id }, [
+      el("td", {}, [el("code", { text: data.run_id })]),
+      el("td", { text: data.variant }),
+      el("td", { text: data.case_id }),
+      el("td", {}, [el("span", { class: "pill pill-run", text: "running" })]),
+      el("td", { class: "muted", text: "…" }),
+      el("td", { class: "muted", text: "…" }),
+      el("td", { class: "muted", text: "…" })
+    ]);
+    body.appendChild(row);
+  }
+  function finishLiveRow(data) {
+    var row = document.getElementById("row-" + data.run_id);
+    if (!row) { return; }
+    var cells = row.querySelectorAll("td");
+    cells[3].innerHTML = "";
+    cells[3].appendChild(el("span", {
+      class: "pill " + (data.status === "success" ? "pill-ok" : "pill-err"),
+      text: data.status
+    }));
+    cells[4].textContent = data.duration_ms === null ? "n/a" : (data.duration_ms + " ms");
+    cells[5].textContent = data.usage && data.usage.total_tokens !== null && data.usage.total_tokens !== undefined
+      ? data.usage.total_tokens : "n/a";
+    cells[6].textContent = Object.keys(data.outputs || {}).length + " 个文件";
+  }
+  function showOutputs(data) {
+    var outputs = data.outputs || {};
+    var keys = Object.keys(outputs);
+    if (!keys.length) { return; }
+    $("output-card").hidden = false;
+    var split = $("output-split");
+    split.innerHTML = "";
+    keys.forEach(function (key) {
+      var side = el("div", {}, [
+        el("h3", { text: key }),
+        el("pre", { text: outputs[key] })
+      ]);
+      split.appendChild(side);
+    });
+  }
+
+  // --------------------------------------------------------------- history --
+  function loadHistory() {
+    api("/api/experiments").then(function (data) {
+      var body = $("history-table").querySelector("tbody");
+      body.innerHTML = "";
+      (data.experiments || []).forEach(function (item) {
+        var report = (item.reports || {}).html || "";
+        var link = el("a", { href: report ? "/reports/" + item.experiment_id + "/report.html" : "#", text: "打开" });
+        body.appendChild(el("tr", {}, [
+          el("td", {}, [el("code", { text: item.experiment_id })]),
+          el("td", { text: item.title || "" }),
+          el("td", { text: item.status || "" }),
+          el("td", { class: "muted small", text: (item.dataset || "") + " " + (item.dataset_version || "") }),
+          el("td", { class: "muted small", text: (item.updated_at || "").slice(0, 19).replace("T", " ") }),
+          el("td", {}, [link])
+        ]));
+      });
+    });
+  }
+
+  // ------------------------------------------------------------------ boot --
+  api("/api/session").then(function (data) {
+    if (data.authenticated) { showApp(data.role); bootstrap(); } else { showLogin(); }
+  }).catch(showLogin);
+})();
+</script>
+</body>
+</html>

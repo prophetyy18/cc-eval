@@ -110,6 +110,15 @@ class TaskBundle(StrictModel):
     prompt: str = ""
     input_files: dict[str, str] = Field(default_factory=dict)
     expected_output_path: str = "out/result.json"
+    # The paths (relative to the workspace root) whose files count as the
+    # agent's *output*.  A skill that writes somewhere else - ``docs/intents``
+    # for the cc-workflow intent skill, for example - declares it here so the
+    # report can show and score it.
+    output_paths: list[str] = Field(default_factory=lambda: ["out"])
+    # When the *agent* chooses the name of the file it produces (a skill that
+    # writes ``docs/intents/INT-001/INTENT.md``), the evaluator scores every
+    # file matching this pattern instead of one fixed path.
+    output_glob: str = ""
     output_schema: dict[str, Any] | None = None
     tags: list[str] = Field(default_factory=list)
     source: str = ""

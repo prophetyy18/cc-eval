@@ -204,7 +204,7 @@ class CodexRunner(BaseRunner):
                 f"{exec_result.stderr.strip()[:400]}"
             )
 
-        result.output_files = workspace.collect_outputs()
+        result.output_files = workspace.collect_outputs(task.output_paths)
         if exec_result.stderr.strip():
             result.provenance["stderr_tail"] = exec_result.stderr.strip()[-2000:]
         return result

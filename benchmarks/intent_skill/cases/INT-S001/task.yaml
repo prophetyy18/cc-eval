@@ -1,0 +1,48 @@
+case_id: INT-S001
+task_type: intent_capture
+title: Decompose a support request into intent documents
+source: hand-authored fixture (cc-eval intent-skill benchmark v1)
+evidence: >
+  A support request with three statements that do NOT map one-to-one onto
+  intents: two of them are the same user problem (finding an order) and the
+  third one is a different problem (order status semantics).  The skill has
+  to decide how many intents exist, not one per line.
+prompt: |
+  You are working in a repository that contains the `intent` skill.
+
+  A user has sent the raw request below.  It is saved at
+  `task/input/request.md` - read it before you answer.
+
+  Use the `intent` skill from this repository to capture it: decide whether
+  the request is one intent or several, and write the intent document(s)
+  under `docs/intents/`.
+
+  Rules:
+  - There is no human to answer questions.  Wherever the skill would normally
+    clarify something with the user, state the assumption inline and mark it
+    "(assumed)".
+  - Follow the INTENT.md template of the skill exactly.
+  - Do not start a Spec, an Architecture or an implementation.
+  - Do not commit anything.
+tags:
+  - intent
+  - decomposition
+  - cc-workflow
+# The tools the `intent` skill declares for itself.  A non-interactive run
+# has nobody to answer a permission prompt, so the case must declare them.
+allowed_tools:
+  - Read
+  - Edit
+  - Write
+  - Glob
+  - Grep
+  - "Bash(date:*)"
+  - "Bash(mkdir:*)"
+  - "Bash(git:*)"
+  - WebFetch
+  - WebSearch
+# The skill writes the intent documents itself, under docs/intents/.  The
+# evaluator scores every INTENT.md the agent produced.
+output_paths:
+  - docs/intents
+output_glob: "docs/intents/*/INTENT.md"
