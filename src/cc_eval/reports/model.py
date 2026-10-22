@@ -76,6 +76,23 @@ def metric_label(metric: str) -> str:
 # --------------------------------------------------------------------------- #
 
 
+#: The trace events a report shows.  The full trace stays on disk; a report
+#: carries the events a reader can act on, and counts the rest so that
+#: nothing disappears silently.  (A single Claude Code run produces thousands
+#: of ``system`` bookkeeping events - they would dwarf the report.)
+REPORT_TRACE_EVENTS = frozenset(
+    {
+        "session",
+        "tool_call",
+        "tool_result",
+        "agent_output",
+        "result",
+        "error",
+        "reasoning",
+    }
+)
+
+
 class ReportRun(StrictModel):
     """One run, with its evaluation and its normalised trace."""
 
@@ -106,6 +123,10 @@ class ReportRun(StrictModel):
     # -- trace ------------------------------------------------------------ #
     trace_present: bool = False
     trace_events: list[TraceEvent] = Field(default_factory=list)
+    #: How many events of each type the full trace holds.
+    trace_event_counts: dict[str, int] = Field(default_factory=dict)
+    #: The event types that were counted but not shown.
+    trace_event_types_collapsed: list[str] = Field(default_factory=list)
     missing_fields: list[str] = Field(default_factory=list)
     capabilities: list[CapabilityStatus] = Field(default_factory=list)
     redacted: bool = True
@@ -359,7 +380,17 @@ def _run_summary(record: RunRecord) -> ReportRun:
         evaluation_notes=list(evaluation.notes),
         evaluation_details=dict(evaluation.details),
         trace_present=trace is not None,
-        trace_events=list(trace.events) if trace else [],
+        trace_events=[
+            event for event in (trace.events if trace else []) if event.type in REPORT_TRACE_EVENTS
+        ],
+        trace_event_counts=_event_counts(trace.events if trace else []),
+        trace_event_types_collapsed=sorted(
+            {
+                event.type
+                for event in (trace.events if trace else [])
+                if event.type not in REPORT_TRACE_EVENTS
+            }
+        ),
         missing_fields=list(trace.missing_fields) if trace else [],
         capabilities=list(trace.capabilities) if trace else [],
         redacted=bool(trace.redacted) if trace else True,
@@ -367,6 +398,13 @@ def _run_summary(record: RunRecord) -> ReportRun:
         framework_commit=str(provenance.get("framework_commit", "") or ""),
         order_index=provenance.get("order_index"),
     )
+
+
+def _event_counts(events: list[TraceEvent]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for event in events:
+        counts[event.type] = counts.get(event.type, 0) + 1
+    return dict(sorted(counts.items()))
 
 
 def _step_label(event: TraceEvent) -> str:

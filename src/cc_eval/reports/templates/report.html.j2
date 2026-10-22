@@ -873,6 +873,9 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
               <span class="muted">{{ run.variant }} · repetition {{ run.repetition }}</span>
               {% if run.redacted %}<span class="badge badge-missing">redacted</span>{% endif %}
               {% if run.trace_present %}<span class="badge">trace available</span>{% else %}<span class="badge badge-missing">no trace</span>{% endif %}
+              {% if run.trace_event_types_collapsed %}
+              <span class="badge" title="{{ run.trace_event_counts|json_compact }}">{{ run.trace_event_types_collapsed|join(', ') }} events collapsed</span>
+              {% endif %}
             </div>
             {% if run.missing_fields %}
             <div class="missing-box">This runtime did not provide: {{ run.missing_fields|join(', ') }}. Those values are shown as n/a, never as zero.</div>
