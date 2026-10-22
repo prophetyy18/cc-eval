@@ -1,0 +1,84 @@
+id: EXP-001
+title: Candidate skill set for review, routing, impact analysis and coverage
+hypothesis: >
+  The candidate skill set finds more real defects than the baseline skill set
+  without introducing false positives on the clean specification.
+independent_variable: >
+  The implementation of the four framework skills.  Exactly four files differ
+  between the two framework trees and they are listed in expected_changes.
+baseline:
+  name: baseline
+  framework:
+    type: path
+    path: examples/framework/baseline
+  config: {}
+  expected_capabilities:
+    - spec-review
+    - intent-router
+    - cross-module-impact
+    - requirement-guard
+candidate:
+  name: candidate
+  framework:
+    type: path
+    path: examples/framework/candidate
+  config: {}
+  expected_capabilities:
+    - spec-review
+    - intent-router
+    - cross-module-impact
+    - requirement-guard
+controls:
+  runtime: fake
+  model: null
+  benchmark: benchmarks/suite
+  dataset_version: v1
+  evaluator: deterministic-v1
+  repetitions: 3
+  max_budget_usd: null
+  timeout_sec: 300
+  seed: 20240101
+  order: alternating
+metrics:
+  - recall
+  - precision
+  - f1
+  - false_positive_count
+expected_changes:
+  - skills.manifest.json
+  - skills/spec_review.py
+  - skills/intent_router.py
+  - skills/cross_module.py
+  - skills/requirement_guard.py
+decision_rules:
+  primary_metric: recall
+  direction: higher_is_better
+  min_delta: 0.05
+  min_repetitions: 3
+  case_delta_threshold: 0.0
+  guard_metrics:
+    - precision
+  guard_tolerance: 0.0
+  max_regressed_cases: 0
+  require_confound_free: true
+  require_verified_capabilities:
+    - spec-review
+    - intent-router
+    - cross-module-impact
+    - requirement-guard
+  confidence:
+    method: paired_bootstrap
+    alpha: 0.05
+    iterations: 2000
+    seed: 20240101
+framework_change: >
+  The candidate skill set adds the determinism and state-consistency detectors
+  to the spec review, merges overlapping intents and adds the access-control
+  intent category, follows the dependency graph transitively and only accepts
+  a requirement as implemented when it is stated normatively.
+references:
+  - docs/adr/0002-single-variable-discipline.md
+notes: >
+  The dataset is the five-case core suite.  The baseline and the candidate run
+  against the same benchmark with the same evaluator, the same order policy and
+  the same number of repetitions.

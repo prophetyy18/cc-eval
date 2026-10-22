@@ -1,0 +1,38 @@
+case_id: SPEC-E002
+task_type: spec_review
+title: Notification service spec review (clean specification)
+source: hand-authored fixture (cc-eval benchmark suite v1)
+evidence: >
+  A deliberately clean specification. It declares an ordering rule, defines
+  the error handling path, serialises concurrent writes and states a measured
+  latency budget. A reviewer must report NOTHING here; a reviewer that
+  reports a defect produces a false positive.
+prompt: |
+  You are reviewing a specification of the Notification Service.
+
+  Use the `spec-review` skill from the framework under test.
+
+  The specification is at `task/input/spec.md`. Read it before you answer.
+
+  Write your findings as JSON to `out/result.json`:
+
+  {{
+    "findings": [
+      {{
+        "id": "<short identifier you choose>",
+        "category": "<defect category>",
+        "severity": "high" | "medium" | "low",
+        "description": "<one sentence>",
+        "evidence": "<quote or location from the specification>"
+      }}
+    ],
+    "summary": "<one sentence>"
+  }}
+
+  Rules:
+  - Only report a defect that you can support with evidence from the file.
+  - This specification may be correct. If it is correct, write an empty `findings` array.
+  - Do not report a defect that the specification already resolves explicitly.
+tags:
+  - specification
+  - false-positive-control

@@ -1,0 +1,25 @@
+# cc-eval workspace (runs, traces, registry, reports)
+.cc-eval/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Never commit raw traces: they can contain sensitive content
+*.jsonl
+!benchmarks/**/*.jsonl

@@ -1,0 +1,13 @@
+# Ground truth for SPEC-E002. This file is NEVER materialised into an agent
+# workspace.
+#
+# The specification is deliberately clean: it declares an ordering rule, an
+# error handling path, serialises concurrent writes and states a measured
+# latency budget. The expected answer is an empty set of findings.
+known_defects: []
+expect_no_findings: true
+notes: >
+  Control case for false positives.  A reviewer that reports a defect here is
+  wrong.  The aggressive candidate variant (which adds an over-eager
+  performance detector) fails this case, which is what experiment EXP-002
+  is designed to expose.

@@ -1,0 +1,5 @@
+name: requirement-coverage
+version: v1
+description: Cases that check whether the specification implements every requirement.
+cases:
+  - REQ-E001

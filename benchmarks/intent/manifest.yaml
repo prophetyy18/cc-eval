@@ -1,0 +1,5 @@
+name: intent-classification
+version: v1
+description: Intent classification, topic merging and category assignment cases.
+cases:
+  - INT-E001

@@ -1,0 +1,57 @@
+name: spec-review-quality
+version: v1
+description: >
+  Quality rubric for a specification review.  The criteria are declared here,
+  before the experiment runs, and are versioned with the rubric file so a
+  historical score can be re-interpreted.  Only the deterministic criteria are
+  scored automatically; the manual criterion is reported as unscored and never
+  silently ignored.
+criteria:
+  - id: EVIDENCE
+    name: Every finding cites evidence from the specification
+    weight: 1.0
+    description: >
+      A finding is only useful when the reviewer can point at the text that
+      supports it.
+    scorer:
+      type: keyword_present
+      keywords:
+        - evidence
+
+  - id: RECOMMENDATION
+    name: Findings come with a recommendation
+    weight: 1.0
+    description: A defect without a suggested fix is only half the answer.
+    scorer:
+      type: regex
+      pattern: "(?i)recommend|suggest|should|fix|add|define|state"
+
+  - id: NO_SPECULATION
+    name: No unsupported speculation
+    weight: 0.5
+    description: The reviewer must not guess about content it did not read.
+    scorer:
+      type: forbidden_pattern
+      patterns:
+        - "(?i)\\bprobably\\b"
+        - "(?i)\\bi think\\b"
+        - "(?i)\\bpresumably\\b"
+
+  - id: COVERAGE
+    name: More than one finding on a defect-dense specification
+    weight: 1.0
+    description: >
+      The specification review must not stop after the first defect.
+    scorer:
+      type: count_min
+      pattern: "\"id\"\\s*:"
+      min_count: 2
+
+  - id: ACTIONABLE
+    name: Overall actionability
+    weight: 1.0
+    description: >
+      Judged by a human: could the author of the specification act on the
+      review without asking a follow-up question?
+    scorer:
+      type: manual

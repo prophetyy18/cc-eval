@@ -1,0 +1,14 @@
+name: cc-workflow-core-suite
+version: v1
+description: >
+  The core suite of the cc-eval benchmark: intent classification and merging,
+  specification defect detection, a clean-specification false-positive control,
+  cross-module impact analysis and requirement omission detection.
+  The cases are assembled from the per-topic benchmark directories so that each
+  topic can also be used on its own.
+cases:
+  - ../intent/cases/INT-E001
+  - ../spec/cases/SPEC-E001
+  - ../spec/cases/SPEC-E002
+  - ../cross_module/cases/XMOD-E001
+  - ../requirements/cases/REQ-E001

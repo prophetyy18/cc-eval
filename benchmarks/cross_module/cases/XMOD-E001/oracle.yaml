@@ -1,0 +1,37 @@
+# Ground truth for XMOD-E001. This file is NEVER materialised into an agent
+# workspace.
+expected_entities:
+  - id: MOD-001
+    category: module-impact
+    severity: medium
+    description: MOD-payment is edited directly.
+    evidence: "edited: MOD-payment"
+    match_keywords:
+      - payment
+
+  - id: MOD-002
+    category: module-impact
+    severity: medium
+    description: MOD-ledger depends on the edited module and is affected.
+    evidence: "- MOD-payment: purchase pipeline, calls MOD-ledger"
+    match_keywords:
+      - ledger
+
+  - id: MOD-003
+    category: module-impact
+    severity: medium
+    description: MOD-session depends on MOD-ledger and is affected transitively.
+    evidence: "- MOD-ledger: accounting, calls MOD-session"
+    match_keywords:
+      - session
+
+  - id: MOD-004
+    category: module-impact
+    severity: medium
+    description: MOD-gateway depends on MOD-session and is affected transitively.
+    evidence: "- MOD-session: user sessions, calls MOD-gateway"
+    match_keywords:
+      - gateway
+notes: >
+  Four affected modules.  MOD-audit is deliberately unrelated and must not be
+  reported.

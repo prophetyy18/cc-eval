@@ -1,0 +1,38 @@
+{
+  "name": "cc-workflow-lite",
+  "version": "candidate",
+  "skills": [
+    {
+      "name": "spec-review",
+      "module": "skills/spec_review.py",
+      "entrypoint": "review",
+      "task_types": [
+        "spec_review"
+      ]
+    },
+    {
+      "name": "intent-router",
+      "module": "skills/intent_router.py",
+      "entrypoint": "route",
+      "task_types": [
+        "intent_classification"
+      ]
+    },
+    {
+      "name": "cross-module-impact",
+      "module": "skills/cross_module.py",
+      "entrypoint": "analyze",
+      "task_types": [
+        "cross_module"
+      ]
+    },
+    {
+      "name": "requirement-guard",
+      "module": "skills/requirement_guard.py",
+      "entrypoint": "check",
+      "task_types": [
+        "requirement_coverage"
+      ]
+    }
+  ]
+}

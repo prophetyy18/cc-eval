@@ -1,0 +1,37 @@
+case_id: XMOD-E001
+task_type: cross_module
+title: Cross-module impact of a change to the payment pipeline
+source: hand-authored fixture (cc-eval benchmark suite v1)
+evidence: >
+  Written by hand. The dependency graph is a three-level chain, so a skill
+  that only reports the edited module misses three affected modules.
+prompt: |
+  You are analysing which modules are affected by a change.
+
+  Use the `cross-module-impact` skill from the framework under test.
+
+  The change is at `task/input/change.md` and the dependency graph is at
+  `task/input/modules.md`. Read both before you answer.
+
+  Write your findings as JSON to `out/result.json`:
+
+  {{
+    "findings": [
+      {{
+        "id": "<short identifier you choose>",
+        "category": "module-impact",
+        "severity": "medium",
+        "description": "<the affected module and why>",
+        "evidence": "<the dependency edge you followed>"
+      }}
+    ],
+    "summary": "<one sentence>"
+  }}
+
+  Rules:
+  - A module is affected when it was edited directly or when it depends on an
+    affected module, directly or through other modules.
+  - Report every affected module, not only the edited one.
+tags:
+  - impact-analysis
+  - dependency-graph

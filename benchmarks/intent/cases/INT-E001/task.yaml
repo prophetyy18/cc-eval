@@ -1,0 +1,38 @@
+case_id: INT-E001
+task_type: intent_classification
+title: Intent classification and conflict merging
+source: hand-authored fixture (cc-eval benchmark suite v1)
+evidence: >
+  Written by hand. Two of the four statements describe the same topic and must
+  be merged into one intent; one statement is an access-control requirement
+  and must not be classified as an ordinary feature.
+prompt: |
+  You are classifying raw user statements into intents.
+
+  Use the `intent-router` skill from the framework under test.
+
+  The statements are at `task/input/intents.md`. Read them before you answer.
+
+  Write your findings as JSON to `out/result.json`:
+
+  {{
+    "findings": [
+      {{
+        "id": "<short identifier you choose>",
+        "category": "<intent category>",
+        "severity": "medium",
+        "description": "<the intent, in one sentence>",
+        "evidence": "<the statement(s) it came from>"
+      }}
+    ],
+    "summary": "<one sentence>"
+  }}
+
+  Rules:
+  - Statements that describe the same topic are ONE intent, not several.
+  - Use the intent categories the skill defines.
+  - Do not drop a statement that expresses a distinct requirement.
+tags:
+  - intent
+  - classification
+  - merging

@@ -1,0 +1,51 @@
+# Ground truth for SPEC-E001. This file is NEVER materialised into an agent
+# workspace - only `task.yaml` and `input/` are.
+known_defects:
+  - id: F001
+    category: event_contract
+    severity: high
+    description: >
+      Events are declared but no ordering or consistency rule is given, so two
+      consumers may process the same events in a different order.
+    evidence: "The specification does not state how two consumers that react to the same event are coordinated."
+    match_keywords:
+      - ordering
+      - consistency rule
+
+  - id: F002
+    category: error_contract
+    severity: high
+    description: >
+      The specification never defines the error handling or the failure
+      behaviour of the purchase pipeline.
+    evidence: "No section of the document describes what happens when a step fails."
+    match_keywords:
+      - error handling
+      - failure behaviour
+
+  - id: F003
+    category: determinism
+    severity: medium
+    description: >
+      The specification depends on the current time, so replaying the same
+      input does not produce the same result.
+    evidence: "The write is stamped with the current time so that the record shows when the purchase happened."
+    match_keywords:
+      - current time
+      - wall-clock
+      - deterministic
+
+  - id: F004
+    category: state_consistency
+    severity: medium
+    description: >
+      Concurrent updates to the same purchase are not serialised, so the state
+      after two conflicting writes is not defined.
+    evidence: "The service also accepts cancellation requests concurrently with the fulfilment service confirming a purchase."
+    match_keywords:
+      - serialised
+      - concurrent
+notes: >
+  Four defects, all planted by hand.  The two baseline detectors (event
+  contract, error contract) cover F001/F002; the candidate detectors
+  (determinism, state consistency) cover F003/F004.

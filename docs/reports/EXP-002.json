@@ -1,0 +1,546 @@
+{
+  "schema": "cc-eval/report/v1",
+  "report": {
+    "experiment_id": "EXP-002",
+    "generated_at": "2026-10-22T12:42:51.379+00:00",
+    "baseline_variant": "baseline",
+    "candidate_variant": "candidate",
+    "metrics": [
+      {
+        "metric": "constraint_precision",
+        "baseline": null,
+        "candidate": null,
+        "delta": null,
+        "delta_pct": null,
+        "baseline_std": null,
+        "candidate_std": null,
+        "baseline_n": 0,
+        "candidate_n": 0,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "constraint_recall",
+        "baseline": 0.0,
+        "candidate": 0.0,
+        "delta": 0.0,
+        "delta_pct": null,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "cost_usd",
+        "baseline": null,
+        "candidate": null,
+        "delta": null,
+        "delta_pct": null,
+        "baseline_std": null,
+        "candidate_std": null,
+        "baseline_n": 0,
+        "candidate_n": 0,
+        "direction": "lower_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "defect_precision",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "defect_recall",
+        "baseline": 0.5,
+        "candidate": 1.0,
+        "delta": 0.5,
+        "delta_pct": 100.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "duration_sec",
+        "baseline": 0.0,
+        "candidate": 0.0,
+        "delta": 0.0,
+        "delta_pct": null,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "entity_precision",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 6,
+        "candidate_n": 6,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "entity_recall",
+        "baseline": 0.4583333333333333,
+        "candidate": 0.4583333333333333,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 6,
+        "candidate_n": 6,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "f1",
+        "baseline": 0.5276190476190477,
+        "candidate": 0.5942857142857143,
+        "delta": 0.06666666666666665,
+        "delta_pct": 12.635379061371838,
+        "baseline_std": 1.3597399555105183e-17,
+        "candidate_std": 1.3597399555105183e-17,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.2,
+        "significant": false
+      },
+      {
+        "metric": "false_negative_count",
+        "baseline": 1.4,
+        "candidate": 1.0,
+        "delta": -0.3999999999999999,
+        "delta_pct": -28.571428571428566,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": -1.2,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "false_positive_count",
+        "baseline": 0.4,
+        "candidate": 0.4,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "finding_count",
+        "baseline": 1.4,
+        "candidate": 1.8,
+        "delta": 0.40000000000000013,
+        "delta_pct": 28.57142857142858,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 1.2,
+        "significant": false
+      },
+      {
+        "metric": "precision",
+        "baseline": 0.875,
+        "candidate": 0.875,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 12,
+        "candidate_n": 12,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "recall",
+        "baseline": 0.4833333333333333,
+        "candidate": 0.5833333333333333,
+        "delta": 0.09999999999999998,
+        "delta_pct": 20.68965517241379,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.3,
+        "significant": false
+      },
+      {
+        "metric": "run_ok",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "total_tokens",
+        "baseline": 477.4,
+        "candidate": 522.4,
+        "delta": 45.0,
+        "delta_pct": 9.42605781315459,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": 0.0,
+        "ci_high": 129.6,
+        "significant": false
+      },
+      {
+        "metric": "valid_output",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      }
+    ],
+    "cases": [
+      {
+        "case_id": "INT-E001",
+        "task_type": "",
+        "baseline_score": 0.6666666666666666,
+        "candidate_score": 0.6666666666666666,
+        "delta": 0.0,
+        "status": "unchanged",
+        "baseline_per_repetition": [
+          0.6666666666666666,
+          0.6666666666666666,
+          0.6666666666666666
+        ],
+        "candidate_per_repetition": [
+          0.6666666666666666,
+          0.6666666666666666,
+          0.6666666666666666
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": [
+          "the difference is within noise; manual review recommended"
+        ]
+      },
+      {
+        "case_id": "REQ-E001",
+        "task_type": "",
+        "baseline_score": 0.0,
+        "candidate_score": 0.0,
+        "delta": 0.0,
+        "status": "unchanged",
+        "baseline_per_repetition": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "candidate_per_repetition": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": [
+          "the difference is within noise; manual review recommended"
+        ]
+      },
+      {
+        "case_id": "SPEC-E001",
+        "task_type": "",
+        "baseline_score": 0.5,
+        "candidate_score": 1.0,
+        "delta": 0.5,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      },
+      {
+        "case_id": "SPEC-E002",
+        "task_type": "",
+        "baseline_score": 1.0,
+        "candidate_score": 1.0,
+        "delta": 0.0,
+        "status": "unchanged",
+        "baseline_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": [
+          "the difference is within noise; manual review recommended"
+        ]
+      },
+      {
+        "case_id": "XMOD-E001",
+        "task_type": "",
+        "baseline_score": 0.25,
+        "candidate_score": 0.25,
+        "delta": 0.0,
+        "status": "unchanged",
+        "baseline_per_repetition": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "candidate_per_repetition": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": [
+          "the difference is within noise; manual review recommended"
+        ]
+      }
+    ],
+    "confounds": [],
+    "decision": {
+      "verdict": "inconclusive",
+      "reason": "recall changed by +0.1000 but the 5% confidence interval [+0.0000, +0.3000] includes zero",
+      "primary_metric": "recall",
+      "baseline_value": 0.4833333333333333,
+      "candidate_value": 0.5833333333333333,
+      "delta": 0.09999999999999998,
+      "confidence_low": 0.0,
+      "confidence_high": 0.3,
+      "rules_snapshot": {
+        "primary_metric": "recall",
+        "direction": "higher_is_better",
+        "min_delta": 0.05,
+        "min_repetitions": 3,
+        "case_delta_threshold": 0.0,
+        "guard_metrics": [
+          "precision"
+        ],
+        "guard_tolerance": 0.0,
+        "max_regressed_cases": 0,
+        "max_regression_rate": null,
+        "require_confound_free": true,
+        "require_verified_capabilities": [
+          "spec-review"
+        ],
+        "confidence": {
+          "method": "paired_bootstrap",
+          "alpha": 0.05,
+          "iterations": 2000,
+          "seed": 20240101
+        },
+        "notes": ""
+      },
+      "decided_at": "2026-10-22T12:42:51.411+00:00",
+      "decided_by": "cc-eval",
+      "accepted": false,
+      "notes": ""
+    },
+    "run_counts": {
+      "baseline": 15,
+      "candidate": 15,
+      "total": 30
+    },
+    "dataset_version": "v1",
+    "dataset_hash": "8ae1f3af63e2341daafc75c32c57487164a2a68479a3e7fef2c6e79319c2ca99",
+    "evaluator": "deterministic",
+    "framework_fingerprints": {
+      "baseline": "07ad12cbd8e33da804ff1fbae3b3e39fc5adfc60536f7ed8623fc50a817fb25e",
+      "candidate": "adcaf3c12c655a557c100f33777e6863bc6f78d800d96c02e489be027ecd9bc7"
+    },
+    "cost_delta_usd": null,
+    "duration_delta_sec": 0.0,
+    "manual_review_cases": [
+      "INT-E001",
+      "REQ-E001",
+      "SPEC-E002",
+      "XMOD-E001"
+    ],
+    "warnings": []
+  },
+  "experiment": {
+    "id": "EXP-002",
+    "title": "Single variable - determinism and concurrency detectors",
+    "hypothesis": "Adding the determinism and the state-consistency detector to the spec review skill increases the defect recall on the defect-dense specification without introducing false positives on the clean specification.\n",
+    "independent_variable": "One file.  skills/spec_review.py in the framework tree.  No other file differs between the two trees, so the experiment is a strict single-variable comparison.\n",
+    "framework_change": "Only skills/spec_review.py changed: two detectors were added.  The remaining three skills are byte-identical to the baseline.\n",
+    "baseline": {
+      "name": "baseline",
+      "framework": {
+        "type": "path",
+        "repository": null,
+        "ref": null,
+        "path": "examples/framework/baseline",
+        "include": [
+          "**/*"
+        ],
+        "exclude": [
+          ".git/**",
+          "**/__pycache__/**",
+          "**/.venv/**"
+        ],
+        "knowledge_snapshot": null
+      },
+      "config": {},
+      "expected_capabilities": [
+        "spec-review",
+        "intent-router",
+        "cross-module-impact",
+        "requirement-guard"
+      ]
+    },
+    "candidate": {
+      "name": "candidate",
+      "framework": {
+        "type": "path",
+        "repository": null,
+        "ref": null,
+        "path": "examples/framework/spec-review-only",
+        "include": [
+          "**/*"
+        ],
+        "exclude": [
+          ".git/**",
+          "**/__pycache__/**",
+          "**/.venv/**"
+        ],
+        "knowledge_snapshot": null
+      },
+      "config": {},
+      "expected_capabilities": [
+        "spec-review",
+        "intent-router",
+        "cross-module-impact",
+        "requirement-guard"
+      ]
+    },
+    "controls": {
+      "runtime": "fake",
+      "model": null,
+      "benchmark": "benchmarks/suite",
+      "dataset_version": "v1",
+      "evaluator": "deterministic-v1",
+      "repetitions": 3,
+      "max_budget_usd": null,
+      "timeout_sec": 300,
+      "seed": 20240101,
+      "order": "alternating",
+      "runner_args": {}
+    },
+    "expected_changes": [
+      "skills/spec_review.py"
+    ],
+    "decision_rules": {
+      "primary_metric": "recall",
+      "direction": "higher_is_better",
+      "min_delta": 0.05,
+      "min_repetitions": 3,
+      "case_delta_threshold": 0.0,
+      "guard_metrics": [
+        "precision"
+      ],
+      "guard_tolerance": 0.0,
+      "max_regressed_cases": 0,
+      "max_regression_rate": null,
+      "require_confound_free": true,
+      "require_verified_capabilities": [
+        "spec-review"
+      ],
+      "confidence": {
+        "method": "paired_bootstrap",
+        "alpha": 0.05,
+        "iterations": 2000,
+        "seed": 20240101
+      },
+      "notes": ""
+    },
+    "references": [
+      "docs/adr/0002-single-variable-discipline.md"
+    ]
+  }
+}

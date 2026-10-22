@@ -1,0 +1,40 @@
+case_id: REQ-E001
+task_type: requirement_coverage
+title: Requirement that the specification does not implement
+source: hand-authored fixture (cc-eval benchmark suite v1)
+evidence: >
+  Written by hand. The specification implements C001, C002 and C003 but only
+  mentions C004 in an "out of scope" note, so a naive keyword match mistakes
+  C004 for an implemented requirement.
+prompt: |
+  You are checking whether the specification implements every user requirement.
+
+  Use the `requirement-guard` skill from the framework under test.
+
+  The requirements are at `task/input/requirements.md` and the specification
+  is at `task/input/spec.md`. Read both before you answer.
+
+  Write your findings as JSON to `out/result.json`:
+
+  {{
+    "findings": [
+      {{
+        "id": "<the requirement id>",
+        "category": "missing-constraint",
+        "severity": "high",
+        "description": "<the requirement that is not implemented>",
+        "evidence": "<why you believe it is not implemented>"
+      }}
+    ],
+    "summary": "<one sentence>"
+  }}
+
+  Rules:
+  - A requirement counts as implemented only when the specification states it
+    as a rule that the system follows.
+  - A requirement that is merely mentioned, for example in a note about what
+    is out of scope, is NOT implemented.
+tags:
+  - requirements
+  - coverage
+  - omission

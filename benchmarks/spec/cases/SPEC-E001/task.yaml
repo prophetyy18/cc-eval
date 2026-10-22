@@ -1,0 +1,39 @@
+case_id: SPEC-E001
+task_type: spec_review
+title: Purchase service event handling spec review
+source: hand-authored fixture (cc-eval benchmark suite v1)
+evidence: >
+  Written by hand for cc-eval. Four defects are planted in the input
+  specification: missing event ordering rules, undefined failure behaviour,
+  dependence on the current time, and unsynchronised concurrent writes.
+  The defects are listed in the oracle file, which is never given to the agent.
+prompt: |
+  You are reviewing a specification of the Purchase Service.
+
+  Use the `spec-review` skill from the framework under test.
+
+  The specification is at `task/input/spec.md`. Read it before you answer.
+
+  Write your findings as JSON to `out/result.json`:
+
+  {{
+    "findings": [
+      {{
+        "id": "<short identifier you choose>",
+        "category": "<defect category>",
+        "severity": "high" | "medium" | "low",
+        "description": "<one sentence>",
+        "evidence": "<quote or location from the specification>"
+      }}
+    ],
+    "summary": "<one sentence>"
+  }}
+
+  Rules:
+  - Only report a defect that you can support with evidence from the file.
+  - Report every defect you find, not just the most obvious one.
+  - If the specification has no defects, write an empty `findings` array.
+tags:
+  - specification
+  - event-driven
+  - determinism

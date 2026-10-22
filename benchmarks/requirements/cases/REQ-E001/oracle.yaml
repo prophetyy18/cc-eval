@@ -1,0 +1,16 @@
+# Ground truth for REQ-E001. This file is NEVER materialised into an agent
+# workspace.
+missing_constraints:
+  - id: C004
+    category: missing-constraint
+    severity: high
+    description: The purchase API enforces a per-customer rate limit.
+    evidence: >
+      The specification only mentions per-customer rate limiting in the "Out of
+      scope" section, so the constraint is not implemented.
+    match_keywords:
+      - rate limit
+      - per-customer
+notes: >
+  Exactly one constraint is missing.  C001, C002 and C003 are implemented
+  normatively and must not be reported.

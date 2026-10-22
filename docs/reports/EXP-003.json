@@ -1,0 +1,544 @@
+{
+  "schema": "cc-eval/report/v1",
+  "report": {
+    "experiment_id": "EXP-003",
+    "generated_at": "2026-10-22T12:42:52.336+00:00",
+    "baseline_variant": "baseline",
+    "candidate_variant": "candidate",
+    "metrics": [
+      {
+        "metric": "constraint_precision",
+        "baseline": null,
+        "candidate": 1.0,
+        "delta": null,
+        "delta_pct": null,
+        "baseline_std": null,
+        "candidate_std": 0.0,
+        "baseline_n": 0,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "constraint_recall",
+        "baseline": 0.0,
+        "candidate": 1.0,
+        "delta": 1.0,
+        "delta_pct": null,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "cost_usd",
+        "baseline": null,
+        "candidate": null,
+        "delta": null,
+        "delta_pct": null,
+        "baseline_std": null,
+        "candidate_std": null,
+        "baseline_n": 0,
+        "candidate_n": 0,
+        "direction": "lower_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "defect_precision",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "defect_recall",
+        "baseline": 0.5,
+        "candidate": 1.0,
+        "delta": 0.5,
+        "delta_pct": 100.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "duration_sec",
+        "baseline": 0.0,
+        "candidate": 0.0,
+        "delta": 0.0,
+        "delta_pct": null,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "entity_precision",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 6,
+        "candidate_n": 6,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "entity_recall",
+        "baseline": 0.4583333333333333,
+        "candidate": 1.0,
+        "delta": 0.5416666666666667,
+        "delta_pct": 118.18181818181822,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 6,
+        "candidate_n": 6,
+        "direction": "higher_is_better",
+        "ci_low": 0.33333333333333337,
+        "ci_high": 0.75,
+        "significant": true
+      },
+      {
+        "metric": "f1",
+        "baseline": 0.5276190476190477,
+        "candidate": 0.8,
+        "delta": 0.2723809523809524,
+        "delta_pct": 51.624548736462096,
+        "baseline_std": 1.3597399555105183e-17,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": -0.39428571428571435,
+        "ci_high": 0.7599999999999998,
+        "significant": false
+      },
+      {
+        "metric": "false_negative_count",
+        "baseline": 1.4,
+        "candidate": 0.0,
+        "delta": -1.4,
+        "delta_pct": -100.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": -2.2,
+        "ci_high": -0.6,
+        "significant": true
+      },
+      {
+        "metric": "false_positive_count",
+        "baseline": 0.4,
+        "candidate": 0.2,
+        "delta": -0.2,
+        "delta_pct": -50.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": -1.2,
+        "ci_high": 0.6,
+        "significant": false
+      },
+      {
+        "metric": "finding_count",
+        "baseline": 1.4,
+        "candidate": 2.6,
+        "delta": 1.2000000000000002,
+        "delta_pct": 85.71428571428574,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 2.4,
+        "significant": false
+      },
+      {
+        "metric": "precision",
+        "baseline": 0.875,
+        "candidate": 0.8,
+        "delta": -0.07499999999999996,
+        "delta_pct": -8.571428571428566,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 12,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": -0.75,
+        "ci_high": 0.375,
+        "significant": false
+      },
+      {
+        "metric": "recall",
+        "baseline": 0.4833333333333333,
+        "candidate": 1.0,
+        "delta": 0.5166666666666667,
+        "delta_pct": 106.89655172413795,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.2166666666666667,
+        "ci_high": 0.8,
+        "significant": true
+      },
+      {
+        "metric": "run_ok",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "total_tokens",
+        "baseline": 477.4,
+        "candidate": 598.4,
+        "delta": 121.0,
+        "delta_pct": 25.34562211981567,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": 42.0,
+        "ci_high": 198.4,
+        "significant": true
+      },
+      {
+        "metric": "valid_output",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      }
+    ],
+    "cases": [
+      {
+        "case_id": "INT-E001",
+        "task_type": "",
+        "baseline_score": 0.6666666666666666,
+        "candidate_score": 1.0,
+        "delta": 0.33333333333333337,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.6666666666666666,
+          0.6666666666666666,
+          0.6666666666666666
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      },
+      {
+        "case_id": "REQ-E001",
+        "task_type": "",
+        "baseline_score": 0.0,
+        "candidate_score": 1.0,
+        "delta": 1.0,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      },
+      {
+        "case_id": "SPEC-E001",
+        "task_type": "",
+        "baseline_score": 0.5,
+        "candidate_score": 1.0,
+        "delta": 0.5,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      },
+      {
+        "case_id": "SPEC-E002",
+        "task_type": "",
+        "baseline_score": 1.0,
+        "candidate_score": 1.0,
+        "delta": 0.0,
+        "status": "unchanged",
+        "baseline_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [
+          "f1",
+          "false_positive_count",
+          "precision"
+        ],
+        "notes": [
+          "regressed on f1, false_positive_count, precision while the primary metric held",
+          "the difference is within noise; manual review recommended"
+        ]
+      },
+      {
+        "case_id": "XMOD-E001",
+        "task_type": "",
+        "baseline_score": 0.25,
+        "candidate_score": 1.0,
+        "delta": 0.75,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      }
+    ],
+    "confounds": [],
+    "decision": {
+      "verdict": "inconclusive",
+      "reason": "recall moved by +0.5167 but 1 case(s) regressed on a guard metric: SPEC-E002 (precision)",
+      "primary_metric": "recall",
+      "baseline_value": 0.4833333333333333,
+      "candidate_value": 1.0,
+      "delta": 0.5166666666666667,
+      "confidence_low": 0.2166666666666667,
+      "confidence_high": 0.8,
+      "rules_snapshot": {
+        "primary_metric": "recall",
+        "direction": "higher_is_better",
+        "min_delta": 0.05,
+        "min_repetitions": 3,
+        "case_delta_threshold": 0.0,
+        "guard_metrics": [
+          "precision"
+        ],
+        "guard_tolerance": 0.0,
+        "max_regressed_cases": 0,
+        "max_regression_rate": null,
+        "require_confound_free": true,
+        "require_verified_capabilities": [
+          "spec-review"
+        ],
+        "confidence": {
+          "method": "paired_bootstrap",
+          "alpha": 0.05,
+          "iterations": 2000,
+          "seed": 20240101
+        },
+        "notes": ""
+      },
+      "decided_at": "2026-10-22T12:42:52.368+00:00",
+      "decided_by": "cc-eval",
+      "accepted": false,
+      "notes": ""
+    },
+    "run_counts": {
+      "baseline": 15,
+      "candidate": 15,
+      "total": 30
+    },
+    "dataset_version": "v1",
+    "dataset_hash": "8ae1f3af63e2341daafc75c32c57487164a2a68479a3e7fef2c6e79319c2ca99",
+    "evaluator": "deterministic",
+    "framework_fingerprints": {
+      "baseline": "07ad12cbd8e33da804ff1fbae3b3e39fc5adfc60536f7ed8623fc50a817fb25e",
+      "candidate": "a76cfa53744c30367bec0b3ad3342ecbda15e2881a0851fbae6a20022cba5d9f"
+    },
+    "cost_delta_usd": null,
+    "duration_delta_sec": 0.0,
+    "manual_review_cases": [
+      "SPEC-E002"
+    ],
+    "warnings": []
+  },
+  "experiment": {
+    "id": "EXP-003",
+    "title": "Over-eager performance detector - a regression that hides behind a better average",
+    "hypothesis": "Adding a performance detector to the spec review skill does not introduce false positives.\n",
+    "independent_variable": "The spec review skill implementation.  The candidate tree differs from the baseline in the same four files as EXP-001, and the spec review skill additionally contains a detector that fires on any mention of latency.\n",
+    "framework_change": "The candidate skill set plus a performance detector that fires on any mention of latency, even when the specification states a measured latency budget.\n",
+    "baseline": {
+      "name": "baseline",
+      "framework": {
+        "type": "path",
+        "repository": null,
+        "ref": null,
+        "path": "examples/framework/baseline",
+        "include": [
+          "**/*"
+        ],
+        "exclude": [
+          ".git/**",
+          "**/__pycache__/**",
+          "**/.venv/**"
+        ],
+        "knowledge_snapshot": null
+      },
+      "config": {},
+      "expected_capabilities": [
+        "spec-review",
+        "intent-router",
+        "cross-module-impact",
+        "requirement-guard"
+      ]
+    },
+    "candidate": {
+      "name": "candidate",
+      "framework": {
+        "type": "path",
+        "repository": null,
+        "ref": null,
+        "path": "examples/framework/candidate_aggressive",
+        "include": [
+          "**/*"
+        ],
+        "exclude": [
+          ".git/**",
+          "**/__pycache__/**",
+          "**/.venv/**"
+        ],
+        "knowledge_snapshot": null
+      },
+      "config": {},
+      "expected_capabilities": [
+        "spec-review",
+        "intent-router",
+        "cross-module-impact",
+        "requirement-guard"
+      ]
+    },
+    "controls": {
+      "runtime": "fake",
+      "model": null,
+      "benchmark": "benchmarks/suite",
+      "dataset_version": "v1",
+      "evaluator": "deterministic-v1",
+      "repetitions": 3,
+      "max_budget_usd": null,
+      "timeout_sec": 300,
+      "seed": 20240101,
+      "order": "alternating",
+      "runner_args": {}
+    },
+    "expected_changes": [
+      "skills.manifest.json",
+      "skills/spec_review.py",
+      "skills/intent_router.py",
+      "skills/cross_module.py",
+      "skills/requirement_guard.py"
+    ],
+    "decision_rules": {
+      "primary_metric": "recall",
+      "direction": "higher_is_better",
+      "min_delta": 0.05,
+      "min_repetitions": 3,
+      "case_delta_threshold": 0.0,
+      "guard_metrics": [
+        "precision"
+      ],
+      "guard_tolerance": 0.0,
+      "max_regressed_cases": 0,
+      "max_regression_rate": null,
+      "require_confound_free": true,
+      "require_verified_capabilities": [
+        "spec-review"
+      ],
+      "confidence": {
+        "method": "paired_bootstrap",
+        "alpha": 0.05,
+        "iterations": 2000,
+        "seed": 20240101
+      },
+      "notes": ""
+    },
+    "references": []
+  }
+}

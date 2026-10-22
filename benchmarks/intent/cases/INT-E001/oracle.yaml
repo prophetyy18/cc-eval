@@ -1,0 +1,32 @@
+# Ground truth for INT-E001. This file is NEVER materialised into an agent
+# workspace.
+expected_entities:
+  - id: INT-001
+    category: feature
+    severity: medium
+    description: >
+      Dark mode for the settings page and for the editor. The two statements
+      describe one intent and must be merged.
+    evidence: "Add a dark mode toggle to the settings page. / Also make the editor respect dark mode."
+    match_keywords:
+      - dark mode
+
+  - id: INT-002
+    category: feature
+    severity: medium
+    description: Remember the last selected tab when reopening the settings page.
+    evidence: "Remember the last selected tab when reopening settings."
+    match_keywords:
+      - last selected tab
+
+  - id: INT-003
+    category: access-control
+    severity: medium
+    description: The settings page is restricted to administrators only.
+    evidence: "Restrict the settings page to administrators only."
+    match_keywords:
+      - administrators
+notes: >
+  Three intents. A baseline that emits one intent per statement produces four
+  findings: it loses the merge, mislabels the access-control intent as a
+  plain feature, and emits a duplicate.

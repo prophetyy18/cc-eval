@@ -1,0 +1,547 @@
+{
+  "schema": "cc-eval/report/v1",
+  "report": {
+    "experiment_id": "EXP-001",
+    "generated_at": "2026-10-22T12:42:50.379+00:00",
+    "baseline_variant": "baseline",
+    "candidate_variant": "candidate",
+    "metrics": [
+      {
+        "metric": "constraint_precision",
+        "baseline": null,
+        "candidate": 1.0,
+        "delta": null,
+        "delta_pct": null,
+        "baseline_std": null,
+        "candidate_std": 0.0,
+        "baseline_n": 0,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "constraint_recall",
+        "baseline": 0.0,
+        "candidate": 1.0,
+        "delta": 1.0,
+        "delta_pct": null,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "cost_usd",
+        "baseline": null,
+        "candidate": null,
+        "delta": null,
+        "delta_pct": null,
+        "baseline_std": null,
+        "candidate_std": null,
+        "baseline_n": 0,
+        "candidate_n": 0,
+        "direction": "lower_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "defect_precision",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "defect_recall",
+        "baseline": 0.5,
+        "candidate": 1.0,
+        "delta": 0.5,
+        "delta_pct": 100.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 3,
+        "candidate_n": 3,
+        "direction": "higher_is_better",
+        "ci_low": null,
+        "ci_high": null,
+        "significant": null
+      },
+      {
+        "metric": "duration_sec",
+        "baseline": 0.0,
+        "candidate": 0.0,
+        "delta": 0.0,
+        "delta_pct": null,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "entity_precision",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 6,
+        "candidate_n": 6,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "entity_recall",
+        "baseline": 0.4583333333333333,
+        "candidate": 1.0,
+        "delta": 0.5416666666666667,
+        "delta_pct": 118.18181818181822,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 6,
+        "candidate_n": 6,
+        "direction": "higher_is_better",
+        "ci_low": 0.33333333333333337,
+        "ci_high": 0.75,
+        "significant": true
+      },
+      {
+        "metric": "f1",
+        "baseline": 0.5276190476190477,
+        "candidate": 1.0,
+        "delta": 0.47238095238095235,
+        "delta_pct": 89.5306859205776,
+        "baseline_std": 1.3597399555105183e-17,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.2,
+        "ci_high": 0.76,
+        "significant": true
+      },
+      {
+        "metric": "false_negative_count",
+        "baseline": 1.4,
+        "candidate": 0.0,
+        "delta": -1.4,
+        "delta_pct": -100.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": -2.2,
+        "ci_high": -0.6,
+        "significant": true
+      },
+      {
+        "metric": "false_positive_count",
+        "baseline": 0.4,
+        "candidate": 0.0,
+        "delta": -0.4,
+        "delta_pct": -100.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": -1.2,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "finding_count",
+        "baseline": 1.4,
+        "candidate": 2.4,
+        "delta": 1.0,
+        "delta_pct": 71.42857142857143,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": -0.2,
+        "ci_high": 2.2,
+        "significant": false
+      },
+      {
+        "metric": "precision",
+        "baseline": 0.875,
+        "candidate": 1.0,
+        "delta": 0.125,
+        "delta_pct": 14.285714285714285,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 12,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.375,
+        "significant": false
+      },
+      {
+        "metric": "recall",
+        "baseline": 0.4833333333333333,
+        "candidate": 1.0,
+        "delta": 0.5166666666666667,
+        "delta_pct": 106.89655172413795,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.2166666666666667,
+        "ci_high": 0.8,
+        "significant": true
+      },
+      {
+        "metric": "run_ok",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      },
+      {
+        "metric": "total_tokens",
+        "baseline": 477.4,
+        "candidate": 578.2,
+        "delta": 100.80000000000007,
+        "delta_pct": 21.11436950146629,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "lower_is_better",
+        "ci_low": 15.8,
+        "ci_high": 193.4,
+        "significant": true
+      },
+      {
+        "metric": "valid_output",
+        "baseline": 1.0,
+        "candidate": 1.0,
+        "delta": 0.0,
+        "delta_pct": 0.0,
+        "baseline_std": 0.0,
+        "candidate_std": 0.0,
+        "baseline_n": 15,
+        "candidate_n": 15,
+        "direction": "higher_is_better",
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "significant": false
+      }
+    ],
+    "cases": [
+      {
+        "case_id": "INT-E001",
+        "task_type": "",
+        "baseline_score": 0.6666666666666666,
+        "candidate_score": 1.0,
+        "delta": 0.33333333333333337,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.6666666666666666,
+          0.6666666666666666,
+          0.6666666666666666
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      },
+      {
+        "case_id": "REQ-E001",
+        "task_type": "",
+        "baseline_score": 0.0,
+        "candidate_score": 1.0,
+        "delta": 1.0,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      },
+      {
+        "case_id": "SPEC-E001",
+        "task_type": "",
+        "baseline_score": 0.5,
+        "candidate_score": 1.0,
+        "delta": 0.5,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      },
+      {
+        "case_id": "SPEC-E002",
+        "task_type": "",
+        "baseline_score": 1.0,
+        "candidate_score": 1.0,
+        "delta": 0.0,
+        "status": "unchanged",
+        "baseline_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": [
+          "the difference is within noise; manual review recommended"
+        ]
+      },
+      {
+        "case_id": "XMOD-E001",
+        "task_type": "",
+        "baseline_score": 0.25,
+        "candidate_score": 1.0,
+        "delta": 0.75,
+        "status": "improved",
+        "baseline_per_repetition": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "candidate_per_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "baseline_variance": 0.0,
+        "candidate_variance": 0.0,
+        "regressed_metrics": [],
+        "notes": []
+      }
+    ],
+    "confounds": [],
+    "decision": {
+      "verdict": "improved",
+      "reason": "recall improved by +0.5167 (0.4833 -> 1.0000) with no blocked confound and no disallowed case regression",
+      "primary_metric": "recall",
+      "baseline_value": 0.4833333333333333,
+      "candidate_value": 1.0,
+      "delta": 0.5166666666666667,
+      "confidence_low": 0.2166666666666667,
+      "confidence_high": 0.8,
+      "rules_snapshot": {
+        "primary_metric": "recall",
+        "direction": "higher_is_better",
+        "min_delta": 0.05,
+        "min_repetitions": 3,
+        "case_delta_threshold": 0.0,
+        "guard_metrics": [
+          "precision"
+        ],
+        "guard_tolerance": 0.0,
+        "max_regressed_cases": 0,
+        "max_regression_rate": null,
+        "require_confound_free": true,
+        "require_verified_capabilities": [
+          "spec-review",
+          "intent-router",
+          "cross-module-impact",
+          "requirement-guard"
+        ],
+        "confidence": {
+          "method": "paired_bootstrap",
+          "alpha": 0.05,
+          "iterations": 2000,
+          "seed": 20240101
+        },
+        "notes": ""
+      },
+      "decided_at": "2026-10-22T12:42:50.411+00:00",
+      "decided_by": "cc-eval",
+      "accepted": false,
+      "notes": ""
+    },
+    "run_counts": {
+      "baseline": 15,
+      "candidate": 15,
+      "total": 30
+    },
+    "dataset_version": "v1",
+    "dataset_hash": "8ae1f3af63e2341daafc75c32c57487164a2a68479a3e7fef2c6e79319c2ca99",
+    "evaluator": "deterministic",
+    "framework_fingerprints": {
+      "baseline": "07ad12cbd8e33da804ff1fbae3b3e39fc5adfc60536f7ed8623fc50a817fb25e",
+      "candidate": "9258d5d4234b4d447ff732e82794c9f921afe63d5c57ccdb3cba9339de3a8268"
+    },
+    "cost_delta_usd": null,
+    "duration_delta_sec": 0.0,
+    "manual_review_cases": [
+      "SPEC-E002"
+    ],
+    "warnings": []
+  },
+  "experiment": {
+    "id": "EXP-001",
+    "title": "Candidate skill set for review, routing, impact analysis and coverage",
+    "hypothesis": "The candidate skill set finds more real defects than the baseline skill set without introducing false positives on the clean specification.\n",
+    "independent_variable": "The implementation of the four framework skills.  Exactly four files differ between the two framework trees and they are listed in expected_changes.\n",
+    "framework_change": "The candidate skill set adds the determinism and state-consistency detectors to the spec review, merges overlapping intents and adds the access-control intent category, follows the dependency graph transitively and only accepts a requirement as implemented when it is stated normatively.\n",
+    "baseline": {
+      "name": "baseline",
+      "framework": {
+        "type": "path",
+        "repository": null,
+        "ref": null,
+        "path": "examples/framework/baseline",
+        "include": [
+          "**/*"
+        ],
+        "exclude": [
+          ".git/**",
+          "**/__pycache__/**",
+          "**/.venv/**"
+        ],
+        "knowledge_snapshot": null
+      },
+      "config": {},
+      "expected_capabilities": [
+        "spec-review",
+        "intent-router",
+        "cross-module-impact",
+        "requirement-guard"
+      ]
+    },
+    "candidate": {
+      "name": "candidate",
+      "framework": {
+        "type": "path",
+        "repository": null,
+        "ref": null,
+        "path": "examples/framework/candidate",
+        "include": [
+          "**/*"
+        ],
+        "exclude": [
+          ".git/**",
+          "**/__pycache__/**",
+          "**/.venv/**"
+        ],
+        "knowledge_snapshot": null
+      },
+      "config": {},
+      "expected_capabilities": [
+        "spec-review",
+        "intent-router",
+        "cross-module-impact",
+        "requirement-guard"
+      ]
+    },
+    "controls": {
+      "runtime": "fake",
+      "model": null,
+      "benchmark": "benchmarks/suite",
+      "dataset_version": "v1",
+      "evaluator": "deterministic-v1",
+      "repetitions": 3,
+      "max_budget_usd": null,
+      "timeout_sec": 300,
+      "seed": 20240101,
+      "order": "alternating",
+      "runner_args": {}
+    },
+    "expected_changes": [
+      "skills.manifest.json",
+      "skills/spec_review.py",
+      "skills/intent_router.py",
+      "skills/cross_module.py",
+      "skills/requirement_guard.py"
+    ],
+    "decision_rules": {
+      "primary_metric": "recall",
+      "direction": "higher_is_better",
+      "min_delta": 0.05,
+      "min_repetitions": 3,
+      "case_delta_threshold": 0.0,
+      "guard_metrics": [
+        "precision"
+      ],
+      "guard_tolerance": 0.0,
+      "max_regressed_cases": 0,
+      "max_regression_rate": null,
+      "require_confound_free": true,
+      "require_verified_capabilities": [
+        "spec-review",
+        "intent-router",
+        "cross-module-impact",
+        "requirement-guard"
+      ],
+      "confidence": {
+        "method": "paired_bootstrap",
+        "alpha": 0.05,
+        "iterations": 2000,
+        "seed": 20240101
+      },
+      "notes": ""
+    },
+    "references": [
+      "docs/adr/0002-single-variable-discipline.md"
+    ]
+  }
+}

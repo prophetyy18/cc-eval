@@ -1,0 +1,77 @@
+id: EXP-002
+title: Single variable - determinism and concurrency detectors
+hypothesis: >
+  Adding the determinism and the state-consistency detector to the spec review
+  skill increases the defect recall on the defect-dense specification without
+  introducing false positives on the clean specification.
+independent_variable: >
+  One file.  skills/spec_review.py in the framework tree.  No other file
+  differs between the two trees, so the experiment is a strict single-variable
+  comparison.
+baseline:
+  name: baseline
+  framework:
+    type: path
+    path: examples/framework/baseline
+  config: {}
+  expected_capabilities:
+    - spec-review
+    - intent-router
+    - cross-module-impact
+    - requirement-guard
+candidate:
+  name: candidate
+  framework:
+    type: path
+    path: examples/framework/spec-review-only
+  config: {}
+  expected_capabilities:
+    - spec-review
+    - intent-router
+    - cross-module-impact
+    - requirement-guard
+controls:
+  runtime: fake
+  model: null
+  benchmark: benchmarks/suite
+  dataset_version: v1
+  evaluator: deterministic-v1
+  repetitions: 3
+  max_budget_usd: null
+  timeout_sec: 300
+  seed: 20240101
+  order: alternating
+metrics:
+  - recall
+  - precision
+  - false_positive_count
+expected_changes:
+  - skills/spec_review.py
+decision_rules:
+  primary_metric: recall
+  direction: higher_is_better
+  min_delta: 0.05
+  min_repetitions: 3
+  case_delta_threshold: 0.0
+  guard_metrics:
+    - precision
+  guard_tolerance: 0.0
+  max_regressed_cases: 0
+  require_confound_free: true
+  require_verified_capabilities:
+    - spec-review
+  confidence:
+    method: paired_bootstrap
+    alpha: 0.05
+    iterations: 2000
+    seed: 20240101
+framework_change: >
+  Only skills/spec_review.py changed: two detectors were added.  The remaining
+  three skills are byte-identical to the baseline.
+references:
+  - docs/adr/0002-single-variable-discipline.md
+notes: >
+  Only one of the five cases can improve, so the paired bootstrap over cases
+  is wide.  This experiment is the honest demonstration of a result that is
+  suggestive but not yet statistically supported: the verdict is expected to be
+  inconclusive because the confidence interval includes zero.

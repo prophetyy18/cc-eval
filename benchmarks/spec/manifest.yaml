@@ -1,0 +1,9 @@
+name: spec-review
+version: v1
+description: >
+  Specification review cases for the cc-workflow `spec-review` skill.
+  Includes one defect-dense case and one clean control case that measures
+  false positives.
+cases:
+  - SPEC-E001
+  - SPEC-E002

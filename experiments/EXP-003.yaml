@@ -1,0 +1,80 @@
+id: EXP-003
+title: Over-eager performance detector - a regression that hides behind a better average
+hypothesis: >
+  Adding a performance detector to the spec review skill does not introduce
+  false positives.
+independent_variable: >
+  The spec review skill implementation.  The candidate tree differs from the
+  baseline in the same four files as EXP-001, and the spec review skill
+  additionally contains a detector that fires on any mention of latency.
+baseline:
+  name: baseline
+  framework:
+    type: path
+    path: examples/framework/baseline
+  config: {}
+  expected_capabilities:
+    - spec-review
+    - intent-router
+    - cross-module-impact
+    - requirement-guard
+candidate:
+  name: candidate
+  framework:
+    type: path
+    path: examples/framework/candidate_aggressive
+  config: {}
+  expected_capabilities:
+    - spec-review
+    - intent-router
+    - cross-module-impact
+    - requirement-guard
+controls:
+  runtime: fake
+  model: null
+  benchmark: benchmarks/suite
+  dataset_version: v1
+  evaluator: deterministic-v1
+  repetitions: 3
+  max_budget_usd: null
+  timeout_sec: 300
+  seed: 20240101
+  order: alternating
+metrics:
+  - recall
+  - precision
+  - false_positive_count
+expected_changes:
+  - skills.manifest.json
+  - skills/spec_review.py
+  - skills/intent_router.py
+  - skills/cross_module.py
+  - skills/requirement_guard.py
+decision_rules:
+  primary_metric: recall
+  direction: higher_is_better
+  min_delta: 0.05
+  min_repetitions: 3
+  case_delta_threshold: 0.0
+  # Precision is a guard metric: an average that improves while the reviewer
+  # starts inventing defects is not an improvement.
+  guard_metrics:
+    - precision
+  guard_tolerance: 0.0
+  max_regressed_cases: 0
+  require_confound_free: true
+  require_verified_capabilities:
+    - spec-review
+  confidence:
+    method: paired_bootstrap
+    alpha: 0.05
+    iterations: 2000
+    seed: 20240101
+framework_change: >
+  The candidate skill set plus a performance detector that fires on any
+  mention of latency, even when the specification states a measured latency
+  budget.
+notes: >
+  The expected outcome is that the recall improves while the precision
+  regresses on SPEC-E002, and that the guard metric turns the verdict into
+  inconclusive instead of improved.

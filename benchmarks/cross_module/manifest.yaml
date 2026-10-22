@@ -1,0 +1,5 @@
+name: cross-module-impact
+version: v1
+description: Impact analysis cases that require following a dependency graph.
+cases:
+  - XMOD-E001
