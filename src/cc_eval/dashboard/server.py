@@ -165,6 +165,18 @@ class ConsoleServer:
             return "admin"
         raise PermissionError("invalid token")
 
+    def public_url(self) -> str:
+        """The address the console is reachable at, if a tunnel publishes it.
+
+        A quick tunnel gets a new URL every time it restarts, so the console
+        shows whatever the tunnel last wrote rather than a hard-coded one.
+        """
+        path = Path.home() / ".config" / "cc-eval" / "console-url.txt"
+        try:
+            return path.read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+
     def too_many_attempts(self, client: str) -> bool:
         now = time.time()
         with self._lock:
@@ -295,6 +307,7 @@ def _make_handler(server: ConsoleServer):
                             "authenticated": session is not None,
                             "role": session.role if session else "",
                             "can_write": bool(session and session.role == "admin"),
+                            "public_url": server.public_url(),
                         }
                     )
                 elif path == "/api/test-types":

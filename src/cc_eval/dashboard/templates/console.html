@@ -135,6 +135,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
       <button class="tab" role="tab" data-panel="history" aria-selected="false">历史</button>
     </nav>
     <div class="spacer"></div>
+    <span class="small muted" id="public-url"></span>
     <button id="logout" class="small">退出</button>
   </div>
 
@@ -281,9 +282,14 @@ details summary { cursor: pointer; color: var(--ink-2); }
     $("app").hidden = true;
     $("token").focus();
   }
-  function showApp(role) {
+  function showApp(role, publicUrl) {
     $("login").hidden = true;
     $("app").hidden = false;
+    if (publicUrl) {
+      var link = el("a", { href: publicUrl, target: "_blank", rel: "noreferrer", text: publicUrl });
+      $("public-url").innerHTML = "";
+      $("public-url").appendChild(link);
+    }
     $("role-badge").textContent = role === "admin" ? "admin（可写）" : "viewer（只读）";
     var writable = role === "admin";
     ["test-type", "case-picker", "repetitions", "model", "b-repo", "b-ref", "c-repo", "c-ref", "start", "new-case"]
@@ -293,7 +299,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
   $("login-button").addEventListener("click", function () {
     $("login-error").textContent = "";
     api("/api/login", { method: "POST", body: JSON.stringify({ token: $("token").value }) })
-      .then(function (data) { showApp(data.role); bootstrap(); })
+      .then(function (data) { showApp(data.role, data.public_url); bootstrap(); })
       .catch(function (err) { $("login-error").textContent = err.message; });
   });
   $("logout").addEventListener("click", function () {
@@ -566,7 +572,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
 
   // ------------------------------------------------------------------ boot --
   api("/api/session").then(function (data) {
-    if (data.authenticated) { showApp(data.role); bootstrap(); } else { showLogin(); }
+    if (data.authenticated) { showApp(data.role, data.public_url); bootstrap(); } else { showLogin(); }
   }).catch(showLogin);
 })();
 </script>
