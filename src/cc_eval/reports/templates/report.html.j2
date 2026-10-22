@@ -572,7 +572,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <table>
         <thead>
           <tr>
-            <th>{{ L.metric }}</th><th class="num">Baseline</th><th class="num">Candidate</th>
+            <th>{{ L.metric }}</th><th class="num">{{ L.baseline }}</th><th class="num">{{ L.candidate }}</th>
             <th class="num">Δ</th><th class="num">Δ%</th><th>95% CI</th>
             <th class="num">n</th><th>{{ L.direction }}</th>
           </tr>
@@ -693,8 +693,8 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <th class="sortable" data-sort-key="case_id">{{ L.case }}<span class="sort-caret">↕</span></th>
             <th class="sortable" data-sort-key="task_type">{{ L.category }}<span class="sort-caret">↕</span></th>
             <th>{{ L.tags }}</th>
-            <th class="num sortable" data-sort-key="baseline">Baseline<span class="sort-caret">↕</span></th>
-            <th class="num sortable" data-sort-key="candidate">Candidate<span class="sort-caret">↕</span></th>
+            <th class="num sortable" data-sort-key="baseline">{{ L.baseline }}<span class="sort-caret">↕</span></th>
+            <th class="num sortable" data-sort-key="candidate">{{ L.candidate }}<span class="sort-caret">↕</span></th>
             <th class="num sortable" data-sort-key="delta">Δ<span class="sort-caret">↕</span></th>
             <th>{{ L.movement }}</th>
             <th class="num">{{ L.reps }}</th>
