@@ -1,13 +1,11 @@
 id: EXP-002
-title: Single variable - determinism and concurrency detectors
+title: 单变量实验 —— 确定性与并发检测器
 hypothesis: >
-  Adding the determinism and the state-consistency detector to the spec review
-  skill increases the defect recall on the defect-dense specification without
-  introducing false positives on the clean specification.
+  在规格评审技能中加入确定性检测与状态一致性检测，可以提高缺陷密集规格上的缺陷召回率，
+  同时不会在干净规格上引入误报。
 independent_variable: >
-  One file.  skills/spec_review.py in the framework tree.  No other file
-  differs between the two trees, so the experiment is a strict single-variable
-  comparison.
+  仅一个文件：框架目录中的 skills/spec_review.py。两棵目录之间没有其他差异，
+  因此这是一个严格的单变量对比。
 baseline:
   name: baseline
   framework:
@@ -71,7 +69,6 @@ framework_change: >
 references:
   - docs/adr/0002-single-variable-discipline.md
 notes: >
-  Only one of the five cases can improve, so the paired bootstrap over cases
-  is wide.  This experiment is the honest demonstration of a result that is
-  suggestive but not yet statistically supported: the verdict is expected to be
-  inconclusive because the confidence interval includes zero.
+  五个用例中只有一个可能改善，因此按用例配对的 bootstrap 置信区间较宽。
+  这个实验诚实地展示了一个「有迹象但尚未获得统计支持」的结果：
+  由于置信区间包含零，结论预计为「不确定」。

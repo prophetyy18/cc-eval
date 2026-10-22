@@ -1,12 +1,10 @@
 id: EXP-003
-title: Over-eager performance detector - a regression that hides behind a better average
+title: 过度敏感的性能检测器 —— 藏在更优平均值背后的退化
 hypothesis: >
-  Adding a performance detector to the spec review skill does not introduce
-  false positives.
+  在规格评审技能中加入性能检测器不会引入误报。
 independent_variable: >
-  The spec review skill implementation.  The candidate tree differs from the
-  baseline in the same four files as EXP-001, and the spec review skill
-  additionally contains a detector that fires on any mention of latency.
+  规格评审技能的实现。候选目录与 EXP-001 相同的那四个文件存在差异，
+  并且规格评审技能额外包含一个只要提到延迟就会触发的检测器。
 baseline:
   name: baseline
   framework:
@@ -75,6 +73,5 @@ framework_change: >
   mention of latency, even when the specification states a measured latency
   budget.
 notes: >
-  The expected outcome is that the recall improves while the precision
-  regresses on SPEC-E002, and that the guard metric turns the verdict into
-  inconclusive instead of improved.
+  预期结果是：召回率提升，同时在 SPEC-E002 上精确率退化，
+  并且守护指标会把结论判为「不确定」而不是「改善」。

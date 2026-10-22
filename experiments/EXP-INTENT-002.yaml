@@ -1,15 +1,13 @@
 id: EXP-INTENT-002
-title: Observation run - how does the intent skill mine and clarify a real request?
+title: 观察跑 —— intent 技能如何挖掘并澄清一个真实请求？
 hypothesis: >
-  The intent skill turns the PHA spot/futures arbitrage request into ONE
-  intent (the two directions are paths of one arbitrage, not two goals), keeps
-  the hard constraint "the PHA quantity does not change" and surfaces the
-  unknowns that decide whether the trade is possible at all.
+  intent 技能把 PHA 现货/期货价差套利请求转化为「一个」意图
+  （两个方向是同一套利的两条路径，而不是两个目标），保留「PHA 数量不变」这一硬约束，
+  并把决定这笔交易是否可行所依赖的未知项显式暴露出来。
 independent_variable: >
-  None in this run - both sides are the same commit of cc-workflow.  The run
-  exists to OBSERVE what the intent skill produces and how stable that
-  output is; the difference between the two sides is the agent's own
-  run-to-run variation, which is worth seeing before any change is made.
+  本次运行没有自变量 —— 两侧都是 cc-workflow 的同一个提交。此次运行的目的
+  是「观察」intent 技能会产出什么、产出是否稳定；两侧之间的差异是 Agent 自身的
+  逐次运行波动，在做任何改动之前值得先看清楚。
 baseline:
   name: baseline
   framework:
@@ -62,8 +60,6 @@ decision_rules:
     iterations: 2000
     seed: 20240101
 notes: >
-  Both sides are the same commit on purpose: this is an observation run, not
-  an A/B.  The report will show the two INTENT.md documents side by side,
-  which shows how stable the skill's decomposition is when nothing changed.
-  The confound analysis will flag the identical frameworks - that is expected
-  and is not a defect of the run.
+  两侧故意使用同一个提交：这是一次观察跑，不是 A/B 对比。报告会把两份 INTENT.md
+  文档并排展示，用来看清「什么都没改」时技能拆解的稳定性。
+  混淆项分析会把两侧框架相同这件事标出来 —— 这是预期现象，不是本次运行的缺陷。

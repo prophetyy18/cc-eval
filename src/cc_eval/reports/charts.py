@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from html import escape
 
+from .i18n import resolve_language
 from .model import metric_label
 
 #: Metrics that live on a 0..1 scale.  They are drawn against a fixed
@@ -95,12 +96,19 @@ def metric_mini_chart(
     candidate: float | None,
     *,
     direction: str = "higher_is_better",
+    language: str | None = None,
 ) -> str:
     """One small multiple: the baseline and the candidate value of a metric.
 
     The two sides are identified by colour; the legend of the section names
     them.  Each bar carries a ``<title>`` so hovering shows the exact value.
     """
+    lang = resolve_language(language)
+    side_labels = (
+        ("baseline", "candidate")
+        if lang == "en"
+        else ("基线", "候选")
+    )
     width, height = 240.0, 132.0
     plot_top, plot_bottom = 30.0, 106.0
     bar_width = 26.0
@@ -110,7 +118,7 @@ def metric_mini_chart(
 
     parts: list[str] = [
         f'<svg class="mini-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img" '
-        f'aria-label="{escape(metric_label(metric))}: baseline and candidate">'
+        f'aria-label="{escape(metric_label(metric, lang))}: {side_labels[0]} / {side_labels[1]}">'
     ]
 
     # -- baseline axis ----------------------------------------------------- #
@@ -122,15 +130,15 @@ def metric_mini_chart(
     if baseline is None and candidate is None:
         parts.append(
             f'<text class="chart-note" x="{centre:.2f}" y="{(plot_top + plot_bottom) / 2:.2f}" '
-            f'text-anchor="middle">no data</text>'
+            f'text-anchor="middle">{"no data" if lang == "en" else "无数据"}</text>'
         )
         parts.append("</svg>")
         return "".join(parts)
 
     # -- the two columns ---------------------------------------------------- #
     for value, x, colour, label in (
-        (baseline, centre - bar_width - gap / 2, SERIES_BASELINE, "baseline"),
-        (candidate, centre + gap / 2, SERIES_CANDIDATE, "candidate"),
+        (baseline, centre - bar_width - gap / 2, SERIES_BASELINE, side_labels[0]),
+        (candidate, centre + gap / 2, SERIES_CANDIDATE, side_labels[1]),
     ):
         if value is None:
             parts.append(

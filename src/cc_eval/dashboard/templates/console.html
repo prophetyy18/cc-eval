@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>cc-eval console</title>
+<title>cc-eval 控制台</title>
 <style>
 :root {
   color-scheme: light dark;
@@ -115,10 +115,10 @@ details summary { cursor: pointer; color: var(--ink-2); }
 
 <div id="login" class="login-wrap" hidden>
   <div class="card">
-    <h1>cc-eval console</h1>
+    <h1>cc-eval 控制台</h1>
     <p class="muted small">输入 token 登录。</p>
     <div class="field" style="margin-top:12px">
-      <label for="token">Token</label>
+      <label for="token">访问令牌</label>
       <input type="password" id="token" autocomplete="current-password">
     </div>
     <div class="error" id="login-error"></div>
@@ -128,7 +128,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
 
 <div id="app" hidden>
   <div class="topbar">
-    <div class="brand">cc-eval console <span id="role-badge"></span></div>
+    <div class="brand">cc-eval 控制台 <span id="role-badge"></span></div>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-panel="run" aria-selected="true">运行</button>
       <button class="tab" role="tab" data-panel="cases" aria-selected="false">用例</button>
@@ -165,7 +165,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
           </div>
           <div>
             <div class="card" style="padding:12px">
-              <h3>Baseline</h3>
+              <h3>基线</h3>
               <div class="field">
                 <label for="b-repo">仓库路径</label>
                 <input type="text" id="b-repo" placeholder="/home/you/cc-workflow">
@@ -176,7 +176,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
               </div>
             </div>
             <div class="card" style="padding:12px;margin-top:10px">
-              <h3>Candidate</h3>
+              <h3>候选</h3>
               <div class="field">
                 <label for="c-repo">仓库路径</label>
                 <input type="text" id="c-repo" placeholder="/home/you/cc-workflow">
@@ -198,7 +198,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
       <div class="card" id="live-card" hidden>
         <h2>实时结果</h2>
         <table id="live-table">
-          <thead><tr><th>Run</th><th>变体</th><th>用例</th><th>状态</th><th>耗时</th><th>Token</th><th>产出</th></tr></thead>
+          <thead><tr><th>运行</th><th>变体</th><th>用例</th><th>状态</th><th>耗时</th><th>Token 数</th><th>产出</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="log" id="live-log" style="margin-top:12px"></div>

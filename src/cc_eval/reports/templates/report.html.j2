@@ -21,7 +21,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ spec.id }} · cc-eval report</title>
+<title>{{ spec.id }} · {{ L.report_title }}</title>
 <style>
 :root {
   color-scheme: light;
@@ -401,7 +401,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         {{ decision.label }}
       </span>
       <span class="meta-item"><span class="meta-label">{{ L.generated }}</span> {{ metadata.generated_at }}</span>
-      <span class="meta-item"><span class="meta-label">{{ L.runtime }}</span> {{ metadata.runtime or 'unknown' }}{% if metadata.model %} · {{ metadata.model }}{% endif %}</span>
+      <span class="meta-item"><span class="meta-label">{{ L.runtime }}</span> {{ metadata.runtime or L.unknown }}{% if metadata.model %} · {{ metadata.model }}{% endif %}</span>
     </div>
   </div>
 </header>
@@ -442,7 +442,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
           {% if comparison.decision.verdict.value == 'improved' %}▲{% elif comparison.decision.verdict.value == 'regressed' %}▼{% else %}◆{% endif %}
           {{ decision.label }}
         </span>
-        <span class="pill">{{ metadata.primary_metric }}</span>
+        <span class="pill">{{ primary_card.label if primary_card else metadata.primary_metric }}</span>
       </div>
       <p class="verdict-reason">{{ decision.reason }}</p>
       <ul class="evidence">
@@ -580,7 +580,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         <tbody>
           {% for card in metric_cards %}
           <tr>
-            <td>{{ card.label }}{% if card.metric == metadata.primary_metric %} <span class="badge">primary</span>{% endif %}</td>
+            <td>{{ card.label }}{% if card.metric == metadata.primary_metric %} <span class="badge">{{ L.primary }}</span>{% endif %}</td>
             <td class="num">{{ card.baseline|metric_number(card.metric) }}</td>
             <td class="num">{{ card.candidate|metric_number(card.metric) }}</td>
             <td class="num">{{ card.delta|signed }}</td>
@@ -637,10 +637,10 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <td>
               <span class="status-chip {% if confound.severity == 'blocker' %}icon-critical{% elif confound.severity == 'warning' %}icon-warning{% else %}icon-neutral{% endif %}">
                 <span aria-hidden="true">{% if confound.severity == 'blocker' %}✕{% elif confound.severity == 'warning' %}▲{% else %}●{% endif %}</span>
-                {{ confound.severity }}
+                {{ L.get('severity_' ~ confound.severity, confound.severity) }}
               </span>
             </td>
-            <td class="nowrap">{{ confound.kind }}</td>
+            <td class="nowrap">{{ L.get('confound_' ~ confound.kind, confound.kind) }}</td>
             <td>{{ confound.detail }}</td>
             <td class="muted">{{ confound.where or '—' }}</td>
           </tr>
@@ -772,8 +772,8 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                         {% for key, value in run.metrics_labeled %}
                         <dt>{{ key }}</dt><dd class="tabular">{{ value|number }}</dd>
                         {% endfor %}
-                        <dt>tokens</dt><dd class="tabular">{% if run.usage.total_tokens is none %}n/a{% else %}{{ run.usage.total_tokens }} ({{ run.usage.source }}){% endif %}</dd>
-                        <dt>cost</dt><dd class="tabular">{% if run.usage.cost_usd is none %}n/a{% else %}{{ run.usage.cost_usd|number }} USD{% endif %}</dd>
+                        <dt>{{ L.tokens }}</dt><dd class="tabular">{% if run.usage.total_tokens is none %}n/a{% else %}{{ run.usage.total_tokens }} ({{ L.get("usage_source_" ~ run.usage.source, run.usage.source) }}){% endif %}</dd>
+                        <dt>{{ L.cost }}</dt><dd class="tabular">{% if run.usage.cost_usd is none %}n/a{% else %}{{ run.usage.cost_usd|number }} USD{% endif %}</dd>
                       </dl>
                       {% if run.matched or run.unmatched_golden or run.unmatched_predictions %}
                       <h4>{{ L.scoring_evidence }}</h4>
@@ -808,12 +808,12 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
                       <thead><tr><th>{{ L.side }}</th><th>{{ L.scores_per_repetition }}</th><th class="num">{{ L.variance }}</th></tr></thead>
                       <tbody>
                         <tr>
-                          <td>baseline</td>
+                          <td>{{ L.baseline }}</td>
                           <td class="tabular">{% if case.baseline_per_repetition %}{{ case.baseline_per_repetition|map('metric_number', metadata.primary_metric)|join(', ') }}{% else %}n/a{% endif %}</td>
                           <td class="num">{{ case.baseline_variance|number }}</td>
                         </tr>
                         <tr>
-                          <td>candidate</td>
+                          <td>{{ L.candidate }}</td>
                           <td class="tabular">{% if case.candidate_per_repetition %}{{ case.candidate_per_repetition|map('metric_number', metadata.primary_metric)|join(', ') }}{% else %}n/a{% endif %}</td>
                           <td class="num">{{ case.candidate_variance|number }}</td>
                         </tr>
@@ -840,7 +840,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       {% for case in case_views %}
       <button class="trace-case-btn" data-trace-case="{{ case.index }}" aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
         <span class="trace-case-id">{{ case.case_id }}</span>
-        <span class="trace-case-sub">{{ case.task_type or '—' }} · {{ case.runs|length }} run(s)</span>
+        <span class="trace-case-sub">{{ case.task_type or '—' }} · {{ case.runs|length }} {{ L.runs }}</span>
       </button>
       {% else %}
       <p class="empty">{{ L.no_trace_at_all }}</p>
@@ -853,14 +853,14 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         <article class="card">
           <div class="card-head">
             <h2>{{ case.case_id }}</h2>
-            <span class="muted" style="font-size:12px">{{ case.task_type or 'unknown category' }} · {{ case.runs|length }} run(s)</span>
+            <span class="muted" style="font-size:12px">{{ case.task_type or L.unknown }} · {{ case.runs|length }} {{ L.runs }}</span>
           </div>
 
           <h3 style="margin-bottom:8px">{{ L.run }}</h3>
           <div class="run-tabs">
             {% for run in case.runs %}
             <button class="chip" data-trace-run="{{ case.index }}-{{ loop.index0 }}" aria-pressed="{% if loop.first %}true{% else %}false{% endif %}">
-              {{ run.variant }} · r{{ run.repetition }}
+              {{ L.get(run.variant, run.variant) }} · r{{ run.repetition }}
             </button>
             {% endfor %}
           </div>
@@ -870,11 +870,11 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <div class="run-title" style="margin-bottom:10px">
               <span class="badge {{ 'badge-ok' if run.ok else 'badge-error' }}">{{ run.status_label }}</span>
               <span class="badge">{{ run.run_id }}</span>
-              <span class="muted">{{ run.variant }} · repetition {{ run.repetition }}</span>
+              <span class="muted">{{ L.get(run.variant, run.variant) }} · {{ L.repetition }} {{ run.repetition }}</span>
               {% if run.redacted %}<span class="badge badge-missing">{{ L.redacted }}</span>{% endif %}
               {% if run.trace_present %}<span class="badge">{{ L.trace_available }}</span>{% else %}<span class="badge badge-missing">{{ L.no_trace }}</span>{% endif %}
               {% if run.trace_event_types_collapsed %}
-              <span class="badge" title="{{ run.trace_event_counts|json_compact }}">{{ run.trace_event_types_collapsed|join(', ') }} events collapsed</span>
+              <span class="badge" title="{{ run.trace_event_counts|json_compact }}">{{ L.events_collapsed.format(types=run.trace_event_types_collapsed|join(', ')) }}</span>
               {% endif %}
             </div>
             {% if run.missing_fields %}
@@ -896,10 +896,10 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
               {% for event in run.trace_events %}
               <li>
                 <span class="seq">{{ event.seq }}</span>
-                <span class="event-type">{{ event.type }}</span>
+                <span class="event-type">{{ event_type_labels.get(event.type, event.type) }}</span>
                 <span>
                   <span class="event-name">{{ event.name or event.tool or '—' }}</span>
-                  {% if event.status %}<span class="event-detail"> · {{ event.status }}</span>{% endif %}
+                  {% if event.status %}<span class="event-detail"> · {{ event_status_labels.get(event.status, event.status) }}</span>{% endif %}
                   {% if event.duration_ms is not none %}<span class="event-detail"> · {{ event.duration_ms }} ms</span>{% endif %}
                   {% if event.error %}<div class="event-error">{{ event.error }}</div>{% endif %}
                   {% if event.details %}<div class="event-detail">{{ event.details|json_compact }}</div>{% endif %}
@@ -915,7 +915,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             <h4 style="margin-top:12px">{{ L.capability_evidence }}</h4>
             <ul class="evidence-list">
               {% for capability in run.capabilities %}
-              <li><code>{{ capability.name }}</code> — {{ capability.status }}{% if capability.evidence %} ({{ capability.evidence }}){% endif %}</li>
+              <li><code>{{ capability.name }}</code> — {{ L.get('capability_status_' ~ capability.status, capability.status) }}{% if capability.evidence %} ({{ capability.evidence }}){% endif %}</li>
               {% endfor %}
             </ul>
             {% endif %}
@@ -933,19 +933,19 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
             </h4>
             <div class="path-diff">
               <div class="path-col">
-                <div class="legend" style="margin-bottom:6px"><span class="legend-item"><span class="legend-swatch" style="background:var(--series-1)"></span>baseline</span></div>
+                <div class="legend" style="margin-bottom:6px"><span class="legend-item"><span class="legend-swatch" style="background:var(--series-1)"></span>{{ L.baseline }}</span></div>
                 <ul class="path-steps">
                   {% for step in diff.baseline_steps %}
                   <li class="{% if step in diff.only_in_baseline %}only{% endif %}">{{ step }}</li>
-                  {% else %}<li class="muted">no trace</li>{% endfor %}
+                  {% else %}<li class="muted">{{ L.no_trace }}</li>{% endfor %}
                 </ul>
               </div>
               <div class="path-col">
-                <div class="legend" style="margin-bottom:6px"><span class="legend-item"><span class="legend-swatch" style="background:var(--series-2)"></span>candidate</span></div>
+                <div class="legend" style="margin-bottom:6px"><span class="legend-item"><span class="legend-swatch" style="background:var(--series-2)"></span>{{ L.candidate }}</span></div>
                 <ul class="path-steps">
                   {% for step in diff.candidate_steps %}
                   <li class="{% if step in diff.only_in_candidate %}only{% endif %}">{{ step }}</li>
-                  {% else %}<li class="muted">no trace</li>{% endfor %}
+                  {% else %}<li class="muted">{{ L.no_trace }}</li>{% endfor %}
                 </ul>
               </div>
             </div>
@@ -966,7 +966,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
     <article class="card">
       <h2>{{ L.runtime_section }}</h2>
       <dl class="kv">
-        <dt>{{ L.runtime_section }}</dt><dd>{{ metadata.runtime or 'unknown' }} {{ metadata.runtime_version }}</dd>
+        <dt>{{ L.runtime_section }}</dt><dd>{{ metadata.runtime or L.unknown }} {{ metadata.runtime_version }}</dd>
         <dt>{{ L.model }}</dt><dd>{{ metadata.model or 'n/a' }}{% if metadata.model_reported_by %} <span class="muted">(reported by {{ metadata.model_reported_by }})</span>{% endif %}</dd>
         <dt>{{ L.seed_control }}</dt><dd>{% if metadata.seed_supported %}{{ L.seed_supported }}{% else %}{{ L.seed_not_supported }}{% endif %}</dd>
         <dt>{{ L.seed }}</dt><dd class="tabular">{{ metadata.seed }}</dd>
@@ -985,7 +985,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         <dt>{{ L.fingerprint }} · {{ variant }}</dt><dd class="hash">{{ fingerprint }}</dd>
         {% endfor %}
         {% for variant, commit in metadata.framework_commits.items() %}
-        <dt>{{ L.commit }} · {{ variant }}</dt><dd class="hash">{{ commit or 'n/a (directory snapshot)' }}</dd>
+        <dt>{{ L.commit }} · {{ variant }}</dt><dd class="hash">{{ commit or L.directory_snapshot }}</dd>
         {% endfor %}
         {% for variant, dirty in metadata.framework_dirty.items() %}
         <dt>{{ L.working_tree }} · {{ variant }}</dt><dd>{{ L.dirty if dirty else L.clean }}</dd>
@@ -1002,9 +1002,9 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
         <dt>{{ L.dataset_hash }}</dt><dd class="hash">{{ metadata.dataset_hash or 'n/a' }}</dd>
         <dt>{{ L.evaluator }}</dt><dd>{{ metadata.evaluator or 'n/a' }}</dd>
         <dt>{{ L.evaluator_version }}</dt><dd>{{ metadata.evaluator_version or 'n/a' }}</dd>
-        <dt>{{ L.primary_metric }}</dt><dd>{{ metadata.primary_metric }} ({{ spec.decision_rules.direction }})</dd>
+        <dt>{{ L.primary_metric }}</dt><dd>{{ primary_card.label if primary_card else metadata.primary_metric }} ({{ L.get(spec.decision_rules.direction, spec.decision_rules.direction) }})</dd>
         <dt>{{ L.missing_data }}</dt><dd>{% if metadata.missing_data %}{{ metadata.missing_data|join(', ') }}{% else %}{{ L.none_reported }}{% endif %}</dd>
-        <dt>{{ L.redactions }}</dt><dd>{% if metadata.redaction_stats %}{{ metadata.redaction_stats|length }} kind(s) scrubbed{% else %}{{ L.none }}{% endif %}</dd>
+        <dt>{{ L.redactions }}</dt><dd>{% if metadata.redaction_stats %}{{ L.scrubbed_kinds.format(n=metadata.redaction_stats|length) }}{% else %}{{ L.none }}{% endif %}</dd>
       </dl>
     </article>
 
@@ -1012,7 +1012,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <h2>{{ L.controls }}</h2>
       <dl class="kv">
         {% for key, value in metadata.controls.items() %}
-        <dt>{{ key }}</dt><dd class="hash">{{ value|json_compact }}</dd>
+        <dt>{{ L.get('ctl_' ~ key, key) }}</dt><dd class="hash">{{ value|json_compact }}</dd>
         {% endfor %}
       </dl>
     </article>
@@ -1022,7 +1022,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <p class="muted" style="font-size:12px">{{ L.decision_rules_hint }}</p>
       <dl class="kv">
         {% for key, value in metadata.decision_rules.items() %}
-        <dt>{{ key }}</dt><dd class="hash">{{ value|json_compact }}</dd>
+        <dt>{{ L.get('rule_' ~ key, key) }}</dt><dd class="hash">{{ value|json_compact }}</dd>
         {% endfor %}
       </dl>
     </article>
@@ -1030,7 +1030,7 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
     <article class="card">
       <h2>{{ L.environment }}</h2>
       <dl class="kv">
-        {% for key, value in metadata.environment.items() %}
+        {% for key, value in environment.items() %}
         <dt>{{ L['env_' ~ key] if ('env_' ~ key) in L else key }}</dt><dd class="hash">{{ value }}</dd>
         {% endfor %}
       </dl>
@@ -1049,8 +1049,8 @@ footer.page-footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; 
       <p class="muted" style="font-size:13px">{{ L.no_confound }}</p>
       {% else %}
       <ul class="notes">
-        {% for confound in metadata.confounds %}
-        <li><strong>{{ confound.severity }}</strong> · {{ confound.kind }} — {{ confound.detail }}</li>
+        {% for confound in confounds %}
+        <li><strong>{{ L.get('severity_' ~ confound.severity, confound.severity) }}</strong> · {{ L.get('confound_' ~ confound.kind, confound.kind) }} — {{ confound.detail }}</li>
         {% endfor %}
       </ul>
       {% endif %}

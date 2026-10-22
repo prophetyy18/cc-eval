@@ -156,7 +156,7 @@ def _load_template(template: str | Path | None = None) -> Any:
 # --------------------------------------------------------------------------- #
 
 
-def _metric_cards(report: ReportModel) -> list[dict[str, Any]]:
+def _metric_cards(report: ReportModel, language: str | None = None) -> list[dict[str, Any]]:
     cards: list[dict[str, Any]] = []
     for aggregate in report.report.metrics:
         cards.append(
@@ -182,6 +182,7 @@ def _metric_cards(report: ReportModel) -> list[dict[str, Any]]:
                     aggregate.baseline,
                     aggregate.candidate,
                     direction=aggregate.direction,
+                    language=language,
                 ),
             }
         )
@@ -234,9 +235,11 @@ def _totals(report: ReportModel) -> list[dict[str, Any]]:
     return found
 
 
-def _primary_metric_card(report: ReportModel) -> dict[str, Any] | None:
+def _primary_metric_card(
+    report: ReportModel, language: str | None = None
+) -> dict[str, Any] | None:
     primary = report.metadata.primary_metric
-    for card in _metric_cards(report):
+    for card in _metric_cards(report, language):
         if card["metric"] == primary:
             return card
     return None
@@ -373,10 +376,34 @@ def build_context(report: ReportModel, language: str | None = None) -> dict[str,
         view["notes_resolved"] = resolved
 
     metadata = report.metadata
+    # The environment block carries a short note that the engine wrote in
+    # English; the reader sees it in their own language.
+    environment = dict(metadata.environment or {})
+    if "note" in environment:
+        environment["note"] = translator.s("env_note_value")
     status_detail = (
         translator.m(metadata.status_detail_code, **(metadata.status_detail_params or {}))
         or metadata.status_detail
     )
+
+    # Trace events are raw runtime records; their type and status get a
+    # readable label, the raw value stays in the tooltip/details.
+    event_type_labels = {
+        "session": translator.s("event_session"),
+        "init": translator.s("event_init"),
+        "tool_call": translator.s("event_tool_call"),
+        "tool_result": translator.s("event_tool_result"),
+        "agent_output": translator.s("event_agent_output"),
+        "result": translator.s("event_result"),
+        "error": translator.s("event_error"),
+        "reasoning": translator.s("event_reasoning"),
+    }
+    event_status_labels = {
+        "success": translator.s("status_success"),
+        "error": translator.s("status_error"),
+        "initiated": translator.s("status_initiated"),
+        "denied": translator.s("status_denied"),
+    }
 
     verdict = decision.verdict.value
     return {
@@ -386,6 +413,9 @@ def build_context(report: ReportModel, language: str | None = None) -> dict[str,
         "cases": report.cases,
         "case_views": case_views,
         "metadata": report.metadata,
+        "environment": environment,
+        "event_type_labels": event_type_labels,
+        "event_status_labels": event_status_labels,
         "L": translator.ui(),
         "language": translator.language,
         "decision": {
@@ -398,8 +428,8 @@ def build_context(report: ReportModel, language: str | None = None) -> dict[str,
         "confounds": confounds,
         "caveats": caveats,
         "status_detail": status_detail,
-        "metric_cards": _metric_cards(report),
-        "primary_card": _primary_metric_card(report),
+        "metric_cards": _metric_cards(report, translator.language),
+        "primary_card": _primary_metric_card(report, translator.language),
         "movement": _movement(report),
         "totals": _totals(report),
         "trace_diff_rows": _trace_diff_rows(report),

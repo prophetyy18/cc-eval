@@ -256,6 +256,81 @@ UI: dict[str, dict[str, str]] = {
         "zh": "在实验文件中、运行之前就已声明。",
     },
     "environment": {"en": "Environment", "zh": "环境"},
+    "primary": {"en": "primary", "zh": "主指标"},
+    "report_title": {"en": "cc-eval report", "zh": "cc-eval 报告"},
+    "event_session": {"en": "session", "zh": "会话"},
+    "event_init": {"en": "init", "zh": "初始化"},
+    "event_tool_call": {"en": "tool call", "zh": "工具调用"},
+    "event_tool_result": {"en": "tool result", "zh": "工具结果"},
+    "event_agent_output": {"en": "agent output", "zh": "Agent 输出"},
+    "event_result": {"en": "result", "zh": "结果"},
+    "event_error": {"en": "error", "zh": "错误"},
+    "event_reasoning": {"en": "reasoning", "zh": "推理"},
+    "status_success": {"en": "success", "zh": "成功"},
+    "capability_status_verified": {"en": "verified", "zh": "已验证"},
+    "capability_status_not_invoked": {"en": "not invoked", "zh": "未被调用"},
+    "capability_status_contradicted": {"en": "contradicted", "zh": "被反证"},
+    "capability_status_unverified": {"en": "unverified", "zh": "未验证"},
+    "status_error": {"en": "error", "zh": "错误"},
+    "status_initiated": {"en": "initiated", "zh": "已发起"},
+    "status_denied": {"en": "denied", "zh": "被拒绝"},
+    "not_available": {"en": "n/a", "zh": "无"},
+    "directory_snapshot": {"en": "n/a (directory snapshot)", "zh": "无(目录快照)"},
+    "scrubbed_kinds": {"en": "{n} kind(s) scrubbed", "zh": "已脱敏 {n} 类"},
+    "env_note_value": {
+        "en": "the host name is deliberately not recorded",
+        "zh": "出于安全考虑,不记录主机名",
+    },
+    "ctl_runtime": {"en": "runtime", "zh": "运行时"},
+    "ctl_model": {"en": "model", "zh": "模型"},
+    "ctl_benchmark": {"en": "benchmark", "zh": "基准"},
+    "ctl_dataset_version": {"en": "dataset version", "zh": "数据集版本"},
+    "ctl_evaluator": {"en": "evaluator", "zh": "评估器"},
+    "ctl_repetitions": {"en": "repetitions", "zh": "重复次数"},
+    "ctl_max_budget_usd": {"en": "max budget (USD)", "zh": "最大预算(美元)"},
+    "ctl_timeout_sec": {"en": "timeout (s)", "zh": "超时(秒)"},
+    "ctl_seed": {"en": "seed", "zh": "随机种子"},
+    "ctl_order": {"en": "order policy", "zh": "顺序策略"},
+    "ctl_runner_args": {"en": "runner arguments", "zh": "运行参数"},
+    "rule_primary_metric": {"en": "primary metric", "zh": "主指标"},
+    "rule_direction": {"en": "direction", "zh": "方向"},
+    "rule_min_delta": {"en": "min delta", "zh": "最小变化量"},
+    "rule_min_repetitions": {"en": "min repetitions", "zh": "最少重复次数"},
+    "rule_case_delta_threshold": {"en": "case delta threshold", "zh": "用例变化阈值"},
+    "rule_guard_metrics": {"en": "guard metrics", "zh": "守护指标"},
+    "rule_guard_tolerance": {"en": "guard tolerance", "zh": "守护容差"},
+    "rule_max_regressed_cases": {"en": "max regressed cases", "zh": "最大退化用例数"},
+    "rule_max_regression_rate": {"en": "max regression rate", "zh": "最大退化比例"},
+    "rule_require_confound_free": {"en": "require confound-free", "zh": "要求无混淆项"},
+    "rule_require_verified_capabilities": {
+        "en": "require verified capabilities",
+        "zh": "要求已验证能力",
+    },
+    "rule_confidence": {"en": "confidence", "zh": "置信区间"},
+    "rule_notes": {"en": "notes", "zh": "备注"},
+    "tokens": {"en": "tokens", "zh": "Token 数"},
+    "cost": {"en": "cost", "zh": "成本"},
+    "runs": {"en": "runs", "zh": "次运行"},
+    "unknown": {"en": "unknown", "zh": "未知"},
+    "events_collapsed": {"en": "{types} events collapsed", "zh": "已折叠 {types} 个事件"},
+    "usage_source_runtime": {"en": "runtime", "zh": "运行时"},
+    "usage_source_unavailable": {"en": "unavailable", "zh": "不可用"},
+    "severity_blocker": {"en": "blocker", "zh": "阻断"},
+    "severity_warning": {"en": "warning", "zh": "警告"},
+    "severity_info": {"en": "info", "zh": "提示"},
+    "confound_capability_unverified": {
+        "en": "capability not verified",
+        "zh": "能力未验证",
+    },
+    "confound_unexpected_framework_diff": {
+        "en": "unexpected framework difference",
+        "zh": "框架差异超预期",
+    },
+    "confound_repetition_mismatch": {
+        "en": "repetition count mismatch",
+        "zh": "重复次数不一致",
+    },
+    "confound_other": {"en": "other", "zh": "其他"},
     "env_python": {"en": "python", "zh": "Python 版本"},
     "env_platform": {"en": "platform", "zh": "操作系统"},
     "env_release": {"en": "release", "zh": "内核版本"},
@@ -598,6 +673,12 @@ class Translator:
             key: (self.m(value) if isinstance(value, str) and value in MESSAGES else value)
             for key, value in params.items()
         }
+        # A capability status is a machine value ("not_invoked"); the reader
+        # wants a word.
+        if "status" in resolved and isinstance(resolved["status"], str):
+            key = f"capability_status_{resolved['status']}"
+            if key in UI:
+                resolved["status"] = self.s(key)
         text = entry.get(self.language) or entry.get("en") or code
         try:
             return text.format(**resolved)

@@ -226,9 +226,9 @@ def test_traces_tab_shows_the_execution_path_of_both_sides(tmp_path: Path) -> No
     assert "A/B 执行路径" in html
     assert "tool_call" in html  # the fake runner emits tool_call events
     assert "tool_result" in html
-    # The runs of both variants are offered.
-    assert "baseline · r1" in html
-    assert "candidate · r1" in html
+    # The runs of both variants are offered (the report speaks Chinese).
+    assert "基线 · r1" in html
+    assert "候选 · r1" in html
 
 
 def test_metadata_tab_reports_the_provenance(tmp_path: Path) -> None:

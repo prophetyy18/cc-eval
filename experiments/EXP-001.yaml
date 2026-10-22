@@ -1,11 +1,9 @@
 id: EXP-001
-title: Candidate skill set for review, routing, impact analysis and coverage
+title: 面向评审、路由、影响分析与覆盖率的候选技能集
 hypothesis: >
-  The candidate skill set finds more real defects than the baseline skill set
-  without introducing false positives on the clean specification.
+  候选技能集比基线技能集发现更多真实缺陷，同时不会在干净规格上引入误报。
 independent_variable: >
-  The implementation of the four framework skills.  Exactly four files differ
-  between the two framework trees and they are listed in expected_changes.
+  四个框架技能的实现。两棵框架目录之间恰好有四个文件不同，已列在 expected_changes 中。
 baseline:
   name: baseline
   framework:
@@ -79,6 +77,5 @@ framework_change: >
 references:
   - docs/adr/0002-single-variable-discipline.md
 notes: >
-  The dataset is the five-case core suite.  The baseline and the candidate run
-  against the same benchmark with the same evaluator, the same order policy and
-  the same number of repetitions.
+  数据集是包含五个用例的核心套件。基线与候选使用同一个基准、同一个评估器、
+  同样的执行顺序策略和同样的重复次数运行。

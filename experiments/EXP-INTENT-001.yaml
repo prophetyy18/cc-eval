@@ -1,14 +1,11 @@
 id: EXP-INTENT-001
-title: Does the intent skill decompose a support request into the right intents?
+title: intent 技能能否把一个客服请求拆成正确的意图？
 hypothesis: >
-  The candidate intent skill splits a three-statement support request into
-  the two user problems it actually contains (finding an order, and
-  unambiguous order statuses) instead of one intent per statement.
+  候选 intent 技能把一个包含三句话的客服请求拆解为它实际包含的两个用户问题
+  （查找订单、订单状态无歧义），而不是每句话生成一个意图。
 independent_variable: >
-  The implementation of the `intent` skill in
-  .claude/skills/intent/SKILL.md (and the reference files it pulls in).  The
-  two framework trees are the same repository at two commits, so the diff
-  between them is exactly the change under test.
+  .claude/skills/intent/SKILL.md 中 `intent` 技能的实现（以及它引用的参考文件）。
+  两棵框架目录是同一仓库的两个提交，因此两者的差异正是被测试的改动本身。
 baseline:
   name: baseline
   framework:
@@ -70,8 +67,6 @@ framework_change: >
 references:
   - docs/adr/0002-single-variable-discipline.md
 notes: >
-  The intent skill normally asks the user clarifying questions.  A batch run
-  has nobody to answer, so the case tells the agent to mark its assumptions
-  inline; the rubric checks that it did.  If your change is *about* the
-  clarification step itself, this harness cannot measure it - the
-  interaction is removed on both sides.
+  intent 技能通常会向用户提问澄清。批量运行中没有人回答，因此用例要求 Agent
+  就地标注自己的假设，评分标准会检查它是否照做。如果你的改动*正是*澄清这一步本身，
+  这个评测框架无法衡量它 —— 两侧的交互都被移除了。

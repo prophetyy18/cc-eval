@@ -142,7 +142,7 @@ def render_markdown(
             if aggregate.ci_low is not None
             else "n/a"
         )
-        direction = "higher is better" if aggregate.direction == "higher_is_better" else "lower is better"
+        direction = translator.s(aggregate.direction)
         lines.append(
             f"| {_metric_display(aggregate.metric, translator.language)} | {_fmt(aggregate.baseline)} | "
             f"{_fmt(aggregate.candidate)} | {_fmt(aggregate.delta)} | "
@@ -150,8 +150,10 @@ def render_markdown(
         )
     lines.append("")
     lines.append(
-        "_Values are macro-averages: each case is averaged over its repetitions first, "
-        "then the cases are averaged._"
+        "_数值为宏平均:每个用例先对其重复执行取平均,再对用例取平均._"
+        if translator.language == "zh"
+        else "_Values are macro-averages: each case is averaged over its repetitions "
+        "first, then the cases are averaged._"
     )
     lines.append("")
 
@@ -165,7 +167,7 @@ def render_markdown(
         regressed_on = ", ".join(case.regressed_metrics) if case.regressed_metrics else "-"
         lines.append(
             f"| {case.case_id} | {_fmt(case.baseline_score)} | {_fmt(case.candidate_score)} | "
-            f"{_fmt(case.delta)} | {case.status} | {regressed_on} | {notes} |"
+            f"{_fmt(case.delta)} | {translator.s(f'case_status_{case.status}')} | {regressed_on} | {notes} |"
         )
     lines.append("")
 
@@ -226,7 +228,10 @@ def render_markdown(
         lines.append("| 严重度 | 类型 | 详情 |")
         lines.append("|---|---|---|")
         for confound, detail in zip(report.confounds, confound_details):
-            lines.append(f"| {confound.severity} | {confound.kind} | {detail} |")
+            lines.append(
+                f"| {translator.s(f'severity_{confound.severity}')} | "
+                f"{translator.s(f'confound_{confound.kind}')} | {detail} |"
+            )
     lines.append("")
 
     # -- verdict ------------------------------------------------------------- #
