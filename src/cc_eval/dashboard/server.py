@@ -20,16 +20,15 @@ agent runs:
 from __future__ import annotations
 
 import base64
+import hashlib
 import hmac
 import json
 import os
 import queue
 import re
-import secrets
 import threading
 import time
 from dataclasses import dataclass
-import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -43,6 +42,7 @@ from .authoring import (
     list_cases,
     write_case,
 )
+from .candidates import CandidateError, CandidateManager
 from .runs import RunManager, RunRequestError
 from .types import all_types
 from .types import get as get_test_type
@@ -112,6 +112,7 @@ class ConsoleServer:
         self.manager = RunManager(
             paths, allowed_framework_roots=config.allowed_framework_roots
         )
+        self.candidates = CandidateManager(paths.root, config.allowed_framework_roots)
         self._login_failures: dict[str, list[float]] = {}
         self._lock = threading.Lock()
 
@@ -227,7 +228,8 @@ def _make_handler(server: ConsoleServer):
 
         # -- plumbing ------------------------------------------------------ #
         def log_message(self, fmt: str, *args: Any) -> None:  # noqa: A003
-            print(f"[console] {self.address_string()} {fmt % args}", flush=True)
+            stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            print(f"[console] {stamp} {self.address_string()} {fmt % args}", flush=True)
 
         def _headers(self, content_type: str, length: int, status: int = 200) -> None:
             self.send_response(status)
@@ -310,7 +312,7 @@ def _make_handler(server: ConsoleServer):
                         {
                             "authenticated": session is not None,
                             "role": session.role if session else "",
-                            "can_write": bool(session and session.role == "admin"),
+                            "can_write": bool(session and session.role == "admin" and server.config.allow_write),
                             "public_url": server.public_url(),
                         }
                     )
@@ -319,9 +321,13 @@ def _make_handler(server: ConsoleServer):
                     self._json({"test_types": [t.as_dict() for t in all_types()]})
                 elif path.startswith("/api/test-types/"):
                     self._cases_get(path)
+                elif path.startswith("/api/candidates"):
+                    self._candidates_get(path)
                 elif path == "/api/experiments":
                     self._require()
                     self._json({"experiments": server.registry.list_experiments()})
+                elif path.startswith("/api/experiments/"):
+                    self._experiment_get(path)
                 elif path == "/api/runs":
                     self._require()
                     self._json({"runs": server.manager.handles()})
@@ -335,6 +341,8 @@ def _make_handler(server: ConsoleServer):
                 self._json({"error": exc.message}, exc.status)
             except PermissionError as exc:
                 self._json({"error": str(exc)}, 403)
+            except CandidateError as exc:
+                self._json({"error": str(exc)}, 400)
             except Exception as exc:  # noqa: BLE001 - never leak a traceback
                 self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
 
@@ -348,6 +356,8 @@ def _make_handler(server: ConsoleServer):
                     self._logout()
                 elif path.startswith("/api/test-types/"):
                     self._cases_post(path)
+                elif path.startswith("/api/candidates"):
+                    self._candidates_post(path)
                 elif path == "/api/runs":
                     self._run_start()
                 else:
@@ -356,7 +366,7 @@ def _make_handler(server: ConsoleServer):
                 self._json({"error": exc.message}, exc.status)
             except PermissionError as exc:
                 self._json({"error": str(exc)}, 403)
-            except (ValueError, AuthoringError, RunRequestError) as exc:
+            except (ValueError, AuthoringError, CandidateError, RunRequestError) as exc:
                 self._json({"error": str(exc)}, 400)
             except Exception as exc:  # noqa: BLE001
                 self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
@@ -398,7 +408,11 @@ def _make_handler(server: ConsoleServer):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "DENY")
             self.end_headers()
-            self.wfile.write(json.dumps({"role": role}).encode("utf-8"))
+            self.wfile.write(json.dumps({
+                "role": role,
+                "can_write": role == "admin" and server.config.allow_write,
+                "public_url": server.public_url(),
+            }).encode("utf-8"))
 
         def _logout(self) -> None:
             cookie = f"{COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"
@@ -418,6 +432,8 @@ def _make_handler(server: ConsoleServer):
 
         def _cases_post(self, path: str) -> None:
             self._require("admin")
+            if not server.config.allow_write:
+                raise PermissionError("the console is read-only")
             parts = [p for p in path.split("/") if p]
             name = parts[2] if len(parts) > 2 else ""
             test_type = get_test_type(name)
@@ -429,11 +445,15 @@ def _make_handler(server: ConsoleServer):
                 test_type,
                 values,
                 case_id=str(data.get("case_id") or "") or None,
+                oracle_yaml=data.get("oracle_yaml"),
+                prompt=data.get("prompt"),
             )
             self._json({"case": case})
 
         def _cases_delete(self, path: str) -> None:
             self._require("admin")
+            if not server.config.allow_write:
+                raise PermissionError("the console is read-only")
             parts = [p for p in path.split("/") if p]
             name = parts[2] if len(parts) > 2 else ""
             case_id = parts[4] if len(parts) > 4 else ""
@@ -446,29 +466,144 @@ def _make_handler(server: ConsoleServer):
             if not server.config.allow_write:
                 raise PermissionError("the console is read-only")
             data = self._body()
+            candidate_id = str(data.get("candidate_id") or "")
+            if candidate_id:
+                candidate = server.candidates.detail(candidate_id)
+                baseline = data.get("baseline") or {}
+                comparison = data.get("candidate") or {}
+                if not candidate["ready_for_experiment"] or data.get("test_type") != "intent-skill":
+                    raise CandidateError("候选版本尚未就绪，或测试类型不是 Intent")
+                if (
+                    str(baseline.get("repository")) != candidate["repository"]
+                    or str(comparison.get("repository")) != candidate["repository"]
+                    or str(baseline.get("ref")) != candidate["baseline_commit"]
+                    or str(comparison.get("ref")) != candidate["candidate_commit"]
+                ):
+                    raise CandidateError("运行配置与已审核的候选版本不一致")
+                data["framework_change"] = candidate["instruction"]
+                data["candidate_snapshot"] = {
+                    key: candidate.get(key) for key in
+                    ("id", "name", "branch", "baseline_commit", "candidate_commit",
+                     "comparison_files", "diff", "instruction", "edit_scope", "edit_limits",
+                     "permission_mode")
+                }
             handle = server.manager.start(data)
-            self._json({"run_id": handle.id, "status": handle.status})
+            self._json({
+                "run_id": handle.id,
+                "experiment_id": handle.experiment_id,
+                "status": handle.status,
+                "benchmark": handle.benchmark,
+                "dataset_hash": handle.dataset_hash,
+                "evaluator": handle.evaluator,
+                "case_ids": handle.case_ids,
+            })
+
+        def _experiment_get(self, path: str) -> None:
+            self._require()
+            parts = [part for part in path.split("/") if part]
+            if len(parts) != 3 or not _ARTIFACT_RE.fullmatch(parts[2]):
+                self._json({"error": "invalid experiment id"}, 400)
+                return
+            experiment_id = parts[2]
+            if not any(item["experiment_id"] == experiment_id for item in server.registry.list_experiments()):
+                self._json({"error": "experiment not found"}, 404)
+                return
+            report_path = server.paths.reports / experiment_id / "report.json"
+            snapshot_path = server.paths.experiments / f"{experiment_id}.dataset.json"
+            snapshot = json.loads(snapshot_path.read_text(encoding="utf-8")) if snapshot_path.is_file() else None
+            self._json({
+                "report": json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else None,
+                "snapshot": snapshot,
+                "experiment": next(item for item in server.registry.list_experiments()
+                                   if item["experiment_id"] == experiment_id),
+            })
+
+        def _candidates_get(self, path: str) -> None:
+            self._require()
+            parts = [p for p in path.split("/") if p]
+            if len(parts) == 2:
+                self._json({
+                    "candidates": server.candidates.list(),
+                    "suggested_repository": server.candidates.suggested_repository(),
+                })
+            elif len(parts) == 3:
+                self._json({"candidate": server.candidates.detail(parts[2])})
+            elif len(parts) == 4 and parts[3] == "publish-preview":
+                self._require("admin")
+                preview = server.candidates.publish_preview(parts[2])
+                experiments = [item for item in server.registry.list_experiments()
+                               if item.get("candidate_id") == parts[2]]
+                latest = max(experiments, key=lambda item: item.get("updated_at", ""), default=None)
+                preview["latest_experiment"] = ({
+                    "experiment_id": latest.get("experiment_id"),
+                    "status": latest.get("status"),
+                    "candidate_commit": latest.get("candidate_commit"),
+                    "matches_current_commit": latest.get("candidate_commit") == preview["candidate_commit"],
+                } if latest else None)
+                self._json({"preview": preview})
+            else:
+                self._json({"error": "not found"}, 404)
+
+        def _candidates_post(self, path: str) -> None:
+            self._require("admin")
+            if not server.config.allow_write:
+                raise PermissionError("the console is read-only")
+            parts = [p for p in path.split("/") if p]
+            data = self._body()
+            if len(parts) == 2:
+                candidate = server.candidates.create(
+                    str(data.get("repository") or ""), str(data.get("name") or "intent"),
+                )
+            elif len(parts) == 4 and parts[3] == "edit":
+                candidate = server.candidates.edit(
+                    parts[2], str(data.get("instruction") or ""), data.get("allowed_paths"),
+                    data.get("limits"), data.get("permission_mode"),
+                )
+            elif len(parts) == 4 and parts[3] == "commit":
+                candidate = server.candidates.commit(parts[2])
+            elif len(parts) == 4 and parts[3] == "discard-current":
+                candidate = server.candidates.discard_current(parts[2])
+            elif len(parts) == 4 and parts[3] == "discard-unexpected":
+                candidate = server.candidates.discard_unexpected(parts[2])
+            elif len(parts) == 4 and parts[3] == "merge-to-main":
+                merged = server.candidates.merge_to_main(
+                    parts[2], str(data.get("expected_main_commit") or ""),
+                    str(data.get("expected_candidate_commit") or ""),
+                )
+                self._json({"merge": merged})
+                return
+            elif len(parts) == 4 and parts[3] == "sync-main":
+                synced = server.candidates.sync_local_main(parts[2])
+                self._json({"sync": synced})
+                return
+            else:
+                self._json({"error": "not found"}, 404)
+                return
+            self._json({"candidate": candidate})
 
         def _run_get(self, path: str) -> None:
             self._require()
             parts = [p for p in path.split("/") if p]
-            run_id = parts[3] if len(parts) > 3 else ""
+            if len(parts) not in {3, 4} or (len(parts) == 4 and parts[3] != "events"):
+                self._json({"error": "not found"}, 404)
+                return
+            run_id = parts[2]
             handle = server.manager.get(run_id)
             if handle is None:
                 self._json({"error": "unknown run"}, 404)
                 return
-            if parts[4:5] == ["events"]:
+            if len(parts) == 4:
                 self._stream(handle)
                 return
-            self._json(
-                {
+            with handle.lock:
+                snapshot = {
                     "id": handle.id,
                     "status": handle.status,
                     "error": handle.error,
-                    "results": handle.results,
-                    "events": handle.events,
+                    "results": list(handle.results),
+                    "events": list(handle.events),
                 }
-            )
+            self._json(snapshot)
 
         def _stream(self, handle: Any) -> None:
             subscriber = server.manager.subscribe(handle.id)

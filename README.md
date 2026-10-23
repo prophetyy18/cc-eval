@@ -280,10 +280,83 @@ cc-eval serve --host 0.0.0.0 --port 30000 \
     --allow-write --admin-token "$ADMIN"         # reachable from the network
 ```
 
-**What it does not do:** it does not score.  The console is an *observation*
-console - it shows what the agent produced, what tools it called, how long it
-took and how many tokens it used.  There is no verdict and no "which side is
-better"; that is the job of `cc-eval compare`, which is unchanged.
+The live run table marks planned and active runs, then adds each completed
+run's score, time, token usage, and outputs. Outputs accumulate by case in a
+baseline/candidate comparison; refreshing the page restores the active run.
+**实验详情** also shows completed runs and their original `INTENT.md` text while
+the experiment is still running. These are per-run results, published when a
+run ends; the verdict and aggregate metrics appear after the experiment ends.
+The final detail page is populated from structured `report.json` and shows
+the verdict, metrics, per-case runs, output, traces, and provenance. The
+standalone HTML remains available there as an export. Console runs also save
+an experiment YAML and a selected-case dataset
+snapshot (`.cc-eval/experiments/<ID>.dataset.json`) with the task inputs and
+oracle as they were at launch, plus an explicit candidate ID in the registry.
+Older experiments without a snapshot still show their recorded results.
+For `intent-skill`, the current rubric checks document
+structure and the oracle's expected intent count; it does not score the
+quality of interactive clarification.
+
+### Candidate branches in the browser
+
+With an admin token and `--allow-write`, open **候选版本**. Point it at the
+`cc-workflow` Git checkout and create a candidate. The console pins the
+current `main` commit as the baseline, creates a `codex/intent-*` branch and
+an isolated worktree under `.cc-eval/candidates/`. Enter an edit instruction
+and the repository-relative paths Claude Code may change, one per line. The
+default is `.claude/skills/intent/`; a trailing `/` means a directory, while a
+path without it names one file. Add another path or choose a broader directory
+when a change also needs shared references. The browser also sets the maximum
+Agent turns, runtime and budget for each edit (defaults: 100 turns, 30 minutes,
+$10). Select a Claude Code permission mode for each edit: `acceptEdits` (the
+default) or `bypassPermissions`. Each edit runs in a temporary worktree with
+only Read/Edit/Write/Glob/Grep tools and a PreToolUse hook that rejects
+Write/Edit paths outside the selected scope. Claude Code treats `.claude/` as
+protected, so `acceptEdits` uses editable copies under an unprotected temporary
+path and maps changes back to the original paths for review. With
+`bypassPermissions`, Claude edits the selected `.claude/` paths directly in the
+temporary worktree. The chosen mode is saved with the edit and its experiment
+snapshot. Headless `bypassPermissions` requires the Claude Code user setting
+`skipDangerousModePermissionPrompt: true` to be accepted beforehand.
+After the run, the console checks the Git changes and copies only selected
+paths to the candidate branch. Denied or isolated attempts appear next to the
+edit controls. Review the changed files and diff against the pinned
+baseline, then commit from the browser. The console pushes the candidate
+branch to `origin` after each commit; that commit action does not push `main`. If a push fails,
+the local commit remains available for experiments and the same button retries
+the push without creating another commit. **放弃本轮未提交改动** restores only the
+last agent edit's reviewed files to the previous commit, so another edit can
+start without changing earlier commits or the remote branch. The file list is
+discovered from the actual Git diff, so every changed skill or reference file appears without
+naming it in advance. The same diff is saved with the experiment and shown
+inside its detail page; bound experiments declare exactly those changed files
+as the expected framework change. The
+**用此版本配置对比实验** button fills the run form with the baseline and candidate
+commit IDs. The run form sets the same Agent turn limit for both variants
+(100 by default); this limit is saved in the experiment configuration. The
+button stays disabled while changes are uncommitted or outside the
+selected scope. Existing untracked files outside the scope can be removed
+with the **清理范围外的未跟踪文件** button. Keep the scope limited to the intended
+independent variable when comparing the candidate with `main`. This is an
+application-level path and import boundary, not an operating-system sandbox.
+The candidate page shows the budget ceiling during an edit and Claude Code's
+reported cost when it becomes available. Some providers report cost only in
+the final result; the console leaves live dollar usage unknown rather than
+estimating it from turns or elapsed time.
+After testing, use **准备合并到 main** on the candidate page. The console reads
+the current `origin/main` and candidate branch, shows the changed files and
+whether the latest experiment used the current candidate commit. After you
+confirm, local Git creates a merge commit in a temporary worktree, pushes it
+to `origin/main`, and fast-forwards the clean local `main`. It never
+force-pushes. A conflict or rejected push leaves local `main` untouched;
+branch protection may reject direct pushes. The candidate worktree must be
+clean and pushed, and the local `main` checkout must be clean. The console
+fetches a newer remote `main` when needed and fast-forwards a local `main`
+that has not diverged.
+If the public tunnel briefly returns 502/503/504, the merge preview retries.
+The merge request is never blindly retried: the page rechecks `origin/main`
+first. If the remote already contains the candidate but the local checkout is
+behind, **同步本地 main** finishes the local fast-forward.
 
 ### The console writes ordinary case files
 
@@ -293,7 +366,7 @@ What you type in the form becomes a normal cc-eval case:
 benchmarks/<type>/cases/<ID>/
 ├── input/<file>     the text you typed
 ├── task.yaml        generated from the test type
-└── oracle.yaml      optional
+└── oracle.yaml      hidden answer, edited separately from the agent prompt
 ```
 
 The console is an **editor**, not a second source of truth.  A case stays a

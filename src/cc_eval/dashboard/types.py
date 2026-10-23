@@ -87,11 +87,18 @@ class TestType:
     task_type: str = "task"
     #: The evaluator used for the per-run metrics.
     evaluator: str = "deterministic-v1"
+    #: Default runtime for runs started from the console.
+    runner: str = "claude"
+    primary_metric: str = "recall"
+    expected_changes: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "title": self.title,
+            "benchmark": str(self.benchmark),
+            "evaluator": self.evaluator,
+            "prompt_template": self.prompt_template,
             "form": [f.as_dict() for f in self.form],
             "outputs": [
                 {
@@ -105,7 +112,7 @@ class TestType:
                 for o in self.outputs
             ],
             "case_prefix": self.case_prefix,
-            "runner": "claude",
+            "runner": self.runner,
         }
 
 
@@ -196,6 +203,8 @@ def _builtin() -> None:
             case_prefix="INT-S",
             task_type="intent_capture",
             evaluator="rubric:intent-doc-v1",
+            primary_metric="rubric_score",
+            expected_changes=[".claude/skills/intent/*"],
         )
     )
 

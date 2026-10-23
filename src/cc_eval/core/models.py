@@ -216,6 +216,7 @@ class Controls(StrictModel):
     dataset_version: str | None = None
     evaluator: str = "deterministic-v1"
     repetitions: int = Field(default=1, ge=1)
+    max_turns: int = Field(default=40, ge=1)
     max_budget_usd: float | None = None
     timeout_sec: int = Field(default=300, ge=1)
     seed: int = 20240101

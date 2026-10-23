@@ -26,6 +26,7 @@ from typing import Any
 
 import yaml
 
+from ..core.models import Oracle
 from .types import TestType
 
 #: A case id is a file name; it may not contain a path separator.
@@ -77,6 +78,9 @@ def list_cases(test_type: TestType) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     if not directory.exists():
         return cases
+    manifest_file = benchmark_dir(test_type) / "manifest.yaml"
+    manifest = yaml.safe_load(manifest_file.read_text(encoding="utf-8")) or {}
+    registered = set(manifest.get("cases") or [])
     for case_dir in sorted(directory.iterdir()):
         if not case_dir.is_dir():
             continue
@@ -91,6 +95,10 @@ def list_cases(test_type: TestType) -> list[dict[str, Any]]:
                 "tags": list(data.get("tags") or []),
                 "task_type": str(data.get("task_type", "")),
                 "has_oracle": (case_dir / "oracle.yaml").exists(),
+                "registered": case_dir.name in registered,
+                "oracle_yaml": (case_dir / "oracle.yaml").read_text(encoding="utf-8")
+                if (case_dir / "oracle.yaml").exists() else "",
+                "prompt": str(data.get("prompt") or ""),
                 "values": read_values(test_type, case_dir),
                 "updated_at": _timestamp(task_file),
             }
@@ -146,28 +154,73 @@ def write_case(
     values: dict[str, Any],
     *,
     case_id: str | None = None,
+    oracle_yaml: str | None = None,
+    prompt: str | None = None,
 ) -> dict[str, Any]:
     """Create or update a case from a form payload.
 
     Returns the written case as the console shows it.
     """
+    # Validate the hidden answer before writing any input or task files.
+    # None preserves an existing oracle for older API clients; an explicit
+    # empty string removes it only when the caller deliberately supplies it.
+    oracle_content: str | None = None
+    if oracle_yaml is not None:
+        if not isinstance(oracle_yaml, str):
+            raise AuthoringError("oracle_yaml 必须是 YAML 字符串")
+        if oracle_yaml.strip():
+            try:
+                parsed = yaml.safe_load(oracle_yaml)
+            except yaml.YAMLError as exc:
+                raise AuthoringError(f"oracle.yaml 语法错误: {exc}") from exc
+            if not isinstance(parsed, dict):
+                raise AuthoringError("oracle.yaml 顶层必须是对象")
+            try:
+                oracle = Oracle(**parsed)
+            except ValueError as exc:
+                raise AuthoringError(f"oracle.yaml 字段错误: {exc}") from exc
+            if not oracle.total_expected and not oracle.expected_output and not oracle.expect_no_findings:
+                raise AuthoringError("oracle.yaml 需要声明标准答案；空答案请设置 expect_no_findings: true")
+            oracle_content = oracle_yaml.rstrip() + "\n"
+        else:
+            oracle_content = ""
+
     case_id = _safe_case_id(case_id) if case_id else next_case_id(test_type)
     case_dir = (benchmark_dir(test_type) / "cases" / case_id).resolve()
     root = benchmark_dir(test_type).resolve()
     if not str(case_dir).startswith(str(root)):
         raise AuthoringError(f"case path escapes the benchmark: {case_id}")
 
-    task: dict[str, Any] = {
-        "case_id": case_id,
-        "task_type": test_type.task_type,
-        "title": str(values.get("title") or "").strip(),
-        "tags": _safe_tags(values.get("tags") or []),
-        "prompt": test_type.prompt_template,
-        "allowed_tools": list(test_type.allowed_tools),
-        "output_paths": list(test_type.output_paths),
-    }
-    if test_type.outputs and any(o.count_pattern for o in test_type.outputs):
-        task["output_glob"] = test_type.outputs[0].collect
+    for form_field in test_type.form:
+        if not form_field.required:
+            continue
+        value = values.get(form_field.key)
+        if value is None or not str(value).strip():
+            raise AuthoringError(f"{form_field.label} 不能为空")
+    if prompt is not None and (not isinstance(prompt, str) or not prompt.strip()):
+        raise AuthoringError("任务指令不能为空")
+
+    task_file = case_dir / "task.yaml"
+    if task_file.exists():
+        # Editing the case input or oracle must preserve any hand-authored
+        # prompt, tool grants and output contract in its existing task.yaml.
+        task = yaml.safe_load(task_file.read_text(encoding="utf-8")) or {}
+        task["title"] = str(values.get("title") or "").strip()
+        task["tags"] = _safe_tags(values.get("tags") or [])
+    else:
+        task = {
+            "case_id": case_id,
+            "task_type": test_type.task_type,
+            "title": str(values.get("title") or "").strip(),
+            "tags": _safe_tags(values.get("tags") or []),
+            "prompt": test_type.prompt_template,
+            "allowed_tools": list(test_type.allowed_tools),
+            "output_paths": list(test_type.output_paths),
+        }
+        if test_type.outputs and any(o.count_pattern for o in test_type.outputs):
+            task["output_glob"] = test_type.outputs[0].collect
+    if prompt is not None:
+        task["prompt"] = prompt
 
     input_dir = case_dir / "input"
     input_dir.mkdir(parents=True, exist_ok=True)
@@ -180,17 +233,21 @@ def write_case(
             value = form_field.default if form_field.default is not None else ""
         if form_field.type == "tags":
             continue
-        if form_field.required and not str(value).strip():
-            raise AuthoringError(f"{form_field.label} 不能为空")
         target = (input_dir / relative).resolve()
         if not str(target).startswith(str(input_dir.resolve())):
             raise AuthoringError(f"input path escapes the case: {relative}")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(str(value), encoding="utf-8")
 
-    (case_dir / "task.yaml").write_text(
+    task_file.write_text(
         yaml.safe_dump(task, sort_keys=False, allow_unicode=True), encoding="utf-8"
     )
+    oracle_file = case_dir / "oracle.yaml"
+    if oracle_content is not None:
+        if oracle_content:
+            oracle_file.write_text(oracle_content, encoding="utf-8")
+        elif oracle_file.exists():
+            oracle_file.unlink()
     _register_case(test_type, case_id)
     return {
         "case_id": case_id,
@@ -198,6 +255,9 @@ def write_case(
         "tags": task["tags"],
         "task_type": task["task_type"],
         "has_oracle": (case_dir / "oracle.yaml").exists(),
+        "registered": True,
+        "oracle_yaml": oracle_file.read_text(encoding="utf-8") if oracle_file.exists() else "",
+        "prompt": str(task.get("prompt") or ""),
         "values": read_values(test_type, case_dir),
         "updated_at": _timestamp(case_dir / "task.yaml"),
     }

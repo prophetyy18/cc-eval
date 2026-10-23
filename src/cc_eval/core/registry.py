@@ -21,16 +21,17 @@ Files (all JSONL, append-only, human readable):
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .models import Decision, EvaluationResult, RunResult
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+    return datetime.now(UTC).isoformat(timespec="milliseconds")
 
 
 def _append_jsonl(path: Path, payload: dict[str, Any]) -> None:
@@ -88,7 +89,10 @@ class Registry:
         candidate_commit: str | None = None,
         dataset: str = "",
         dataset_version: str = "",
+        dataset_hash: str = "",
+        candidate_id: str = "",
         status: str = "created",
+        error: str = "",
         reports: dict[str, str] | None = None,
     ) -> None:
         """Add or update the index entry for an experiment.
@@ -115,7 +119,10 @@ class Registry:
                 "candidate_commit": candidate_commit,
                 "dataset": dataset,
                 "dataset_version": dataset_version,
+                "dataset_hash": dataset_hash or (previous or {}).get("dataset_hash", ""),
+                "candidate_id": candidate_id or (previous or {}).get("candidate_id", ""),
                 "status": status,
+                "error": error,
                 "reports": known_reports,
                 "updated_at": _now(),
             }

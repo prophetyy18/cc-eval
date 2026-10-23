@@ -50,6 +50,8 @@ class EvalConfig(BaseModel):
             "GITHUB_TOKEN",
             "GH_TOKEN",
             "CODEX_API_KEY",
+            "CC_EVAL_DASHBOARD_TOKEN",
+            "CC_EVAL_DASHBOARD_ADMIN_TOKEN",
         ]
     )
     # Extra environment variables forwarded to real runtimes (e.g. a custom

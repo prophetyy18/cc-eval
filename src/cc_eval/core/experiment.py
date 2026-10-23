@@ -17,16 +17,17 @@ from __future__ import annotations
 
 import json
 import random
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import yaml
 
 from ..datasets.loader import Benchmark, materialise_bundle
 from ..evaluators.base import Evaluator
 from ..isolation.redaction import redact_obj, redact_text
-from ..isolation.workspace import Workspace, WorkspaceManager
+from ..isolation.workspace import WorkspaceManager
 from .config import EvalConfig, EvalPaths
 from .models import (
     BenchmarkCase,
@@ -280,6 +281,7 @@ class ExperimentRunner:
         repetitions: int | None = None,
         dry_run: bool = False,
         on_run: Callable[[RunRecord], None] | None = None,
+        on_run_start: Callable[[PlannedRun], None] | None = None,
     ) -> ExecutionResult:
         spec = self.spec
         case_ids = cases or list(self.benchmark.case_ids)
@@ -311,6 +313,8 @@ class ExperimentRunner:
             )
 
         for planned in plan.runs:
+            if on_run_start is not None:
+                on_run_start(planned)
             case = self.benchmark.case(planned.case_id)
             variant = self._variant(planned.variant)
             run_config = self._run_config_for(variant)

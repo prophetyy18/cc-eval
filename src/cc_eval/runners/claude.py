@@ -24,10 +24,11 @@ from __future__ import annotations
 import json
 import shutil
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ..core.models import RunResult, RuntimeInfo, TaskBundle, Trace, Usage
+from ..core.models import RunResult, RuntimeInfo, TaskBundle, Usage
 from ..isolation.subprocess import build_env, run_command
 from ..traces.normalize import normalise_claude, parse_jsonl
 from .base import BaseRunner, RunConfig
@@ -80,13 +81,24 @@ class ClaudeRunner(BaseRunner):
             "--permission-prompts",
             "none",
         ]
+        if config.runner_args.get("restricted"):
+            cmd += ["--restricted"]
+        if config.runner_args.get("limit_tools") or config.runner_args.get("restricted"):
+            cmd += ["--tools", ",".join(task.allowed_tools)]
+        settings = config.runner_args.get("settings")
+        if settings:
+            cmd += ["--settings", str(settings)]
         mode = config.permission_mode
         if mode in _DANGEROUS_MODES:
             if not config.allow_bypass_permissions:
                 raise ValueError(
                     f"refusing to run Claude Code with permission mode {mode!r}: "
-                    "set controls.runner_args.allow_bypass_permissions explicitly to enable it"
+                    "set allow_bypass_permissions explicitly to enable it"
                 )
+            if mode == "dangerously-skip-permissions":
+                cmd += ["--dangerously-skip-permissions"]
+            else:
+                cmd += ["--permission-mode", mode]
         else:
             cmd += ["--permission-mode", mode]
         cmd += ["--max-turns", str(config.max_turns)]
@@ -123,6 +135,7 @@ class ClaudeRunner(BaseRunner):
         experiment_id: str = "",
         variant: str = "",
         repetition: int = 1,
+        on_event: Callable[[dict[str, Any]], None] | None = None,
     ) -> RunResult:
         run_id = f"{experiment_id or 'EXP'}-{variant or 'base'}-{task.case_id}-r{repetition}"
         result = self._base_result(
@@ -142,12 +155,23 @@ class ClaudeRunner(BaseRunner):
             return result
 
         env = _env(config)
+        def handle_line(line: str) -> None:
+            if on_event is None:
+                return
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                return
+            if isinstance(event, dict):
+                on_event(event)
+
         exec_result = run_command(
             command,
             cwd=workspace.root,
             timeout_sec=config.timeout_sec,
             env=env,
             stdin_text=task.prompt,
+            on_stdout_line=handle_line if on_event is not None else None,
         )
         result.ended_at = _now()
         result.duration_ms = exec_result.duration_ms

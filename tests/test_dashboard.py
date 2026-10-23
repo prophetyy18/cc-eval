@@ -22,7 +22,7 @@ import pytest
 
 from cc_eval.core.config import EvalPaths
 from cc_eval.dashboard.authoring import AuthoringError, write_case
-from cc_eval.dashboard.runs import RunManager, RunRequestError
+from cc_eval.dashboard.runs import RunHandle, RunManager, RunRequestError
 from cc_eval.dashboard.server import ConsoleConfig, ConsoleServer
 from cc_eval.dashboard.types import all_types
 from cc_eval.dashboard.types import get as get_test_type
@@ -166,6 +166,56 @@ def test_authoring_writes_a_real_case(tmp_path: Path, monkeypatch) -> None:
     assert loaded.bundle.input_files["request.md"] == "客服说订单找不到\n"
 
 
+def test_authoring_round_trips_oracle_and_registers_case(tmp_path: Path, monkeypatch) -> None:
+    import cc_eval.dashboard.authoring as authoring
+    from cc_eval.core.models import RunResult
+    from cc_eval.datasets.loader import load_benchmark
+    from cc_eval.evaluators import get_evaluator
+
+    monkeypatch.setattr(authoring, "repo_root", lambda: tmp_path)
+    benchmark = tmp_path / "benchmarks" / "intent_skill"
+    (benchmark / "cases").mkdir(parents=True)
+    (benchmark / "manifest.yaml").write_text(
+        "name: intent-skill\nversion: v1\ncases: []\n", encoding="utf-8"
+    )
+    intent = get_test_type("intent-skill")
+    original = "expected_output:\n  expected_intent_count: 1\nnotes: first\n"
+    case = write_case(intent, {"request": "PHA 数量不变", "title": "PHA"}, oracle_yaml=original)
+    assert case["registered"] is True
+    assert case["has_oracle"] is True
+    assert case["oracle_yaml"] == original
+    assert load_benchmark(benchmark).cases[0].oracle.expected_output["expected_intent_count"] == 1
+
+    task_file = benchmark / "cases" / case["case_id"] / "task.yaml"
+    task_text = task_file.read_text(encoding="utf-8")
+    task_file.write_text(task_text.replace("There is no human", "There is a human"), encoding="utf-8")
+    updated = original.replace("count: 1", "count: 2")
+    edited = write_case(
+        intent, {"request": "PHA 数量必须不变", "title": "PHA"},
+        case_id=case["case_id"], oracle_yaml=updated,
+    )
+    assert edited["oracle_yaml"] == updated
+    assert load_benchmark(benchmark).cases[0].oracle.expected_output["expected_intent_count"] == 2
+    assert "There is a human" in task_file.read_text(encoding="utf-8")
+
+    # The normal evaluator, not a separate console-only scorer, reads the
+    # edited oracle from the benchmark when this case is run.
+    result = RunResult(
+        run_id="R1", experiment_id="E1", case_id=case["case_id"], variant="baseline",
+        output_files={"docs/intents/INT-001/INTENT.md": "id: INT-001\n"},
+    )
+    evaluator = get_evaluator("rubric:intent-doc-v1", Path(__file__).resolve().parents[1] / "rubrics")
+    scored = evaluator.evaluate(load_benchmark(benchmark).cases[0], result)
+    assert scored.details["DECOMPOSITION"]["score"] == 0.0
+
+    with pytest.raises(AuthoringError):
+        write_case(
+            intent, {"request": "不应写入"}, case_id=case["case_id"],
+            oracle_yaml="expected_output: [broken",
+        )
+    assert load_benchmark(benchmark).cases[0].bundle.input_files["request.md"] == "PHA 数量必须不变"
+
+
 def test_authoring_rejects_a_traversing_case_id(tmp_path: Path, monkeypatch) -> None:
     import cc_eval.dashboard.authoring as authoring
 
@@ -213,6 +263,32 @@ def test_it_refuses_writing_without_an_admin_token(tmp_path: Path) -> None:
         )
 
 
+def test_admin_token_stays_read_only_without_allow_write(tmp_path: Path) -> None:
+    paths = EvalPaths(tmp_path / "ws")
+    paths.ensure()
+    server = ConsoleServer(
+        paths, ConsoleConfig(host="127.0.0.1", port=0, admin_token="admin-token")
+    )
+    import socketserver
+
+    httpd = socketserver.ThreadingTCPServer(("127.0.0.1", 0), _handler(server))
+    httpd.daemon_threads = True
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f"http://127.0.0.1:{httpd.server_address[1]}"
+        _, login, cookie = _post(f"{base}/api/login", {"token": "admin-token"})
+        assert login["can_write"] is False
+        status, _, _ = _post(
+            f"{base}/api/test-types/intent-skill/cases",
+            {"values": {"request": "x"}}, cookie.split(";")[0],
+        )
+        assert status == 403
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
 def test_reading_needs_a_token_and_writing_needs_the_admin_one(console) -> None:
     base, _ = console
 
@@ -254,6 +330,174 @@ def test_the_admin_token_may_write(console) -> None:
     )
     assert status == 200, payload
     assert payload["case"]["case_id"].startswith("INT-S")
+
+
+def test_admin_can_edit_hidden_oracle_via_api(console) -> None:
+    base, _ = console
+    _, _, cookie = _post(f"{base}/api/login", {"token": "admin-token"})
+    session_cookie = cookie.split(";")[0]
+    oracle = "expected_output:\n  expected_intent_count: 1\n"
+    status, payload, _ = _post(
+        f"{base}/api/test-types/intent-skill/cases",
+        {"values": {"request": "一个意图"}, "oracle_yaml": oracle},
+        session_cookie,
+    )
+    assert status == 200, payload
+    assert payload["case"]["oracle_yaml"] == oracle
+    assert payload["case"]["registered"] is True
+    status, listed = _get(f"{base}/api/test-types/intent-skill/cases", session_cookie)
+    assert status == 200
+    assert listed["cases"][0]["oracle_yaml"] == oracle
+
+
+def test_admin_can_create_candidate_branch_via_api(console, monkeypatch) -> None:
+    import subprocess
+
+    base, server = console
+    repo = server.paths.root.parent / "cc-workflow"
+    repo.mkdir()
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+
+    git("init", "-b", "main")
+    skill = repo / ".claude/skills/intent/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("original\n", encoding="utf-8")
+    git("add", ".")
+    git("-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-m", "base")
+
+    _, _, cookie = _post(f"{base}/api/login", {"token": "admin-token"})
+    session_cookie = cookie.split(";")[0]
+    status, listed = _get(f"{base}/api/candidates", session_cookie)
+    assert status == 200
+    assert listed["suggested_repository"] == str(repo)
+    status, payload, _ = _post(
+        f"{base}/api/candidates",
+        {"repository": str(repo), "name": "clarify first"}, session_cookie,
+    )
+    assert status == 200, payload
+    candidate = payload["candidate"]
+    assert candidate["branch"].startswith("codex/intent-clarify-first-")
+    status, read_back = _get(f"{base}/api/candidates/{candidate['id']}", session_cookie)
+    assert status == 200
+    assert read_back["candidate"]["baseline_commit"] == candidate["baseline_commit"]
+
+    def capture_edit(candidate_id, instruction, allowed_paths, limits, permission_mode):
+        assert candidate_id == candidate["id"]
+        assert instruction == "Clarify intent"
+        assert allowed_paths == [".claude/skills/intent/"]
+        assert permission_mode == "bypassPermissions"
+        return {**candidate, "permission_mode": permission_mode}
+
+    monkeypatch.setattr(server.candidates, "edit", capture_edit)
+    status, edited, _ = _post(
+        f"{base}/api/candidates/{candidate['id']}/edit",
+        {"instruction": "Clarify intent", "allowed_paths": [".claude/skills/intent/"],
+         "permission_mode": "bypassPermissions"}, session_cookie,
+    )
+    assert status == 200, edited
+    assert edited["candidate"]["permission_mode"] == "bypassPermissions"
+
+    def capture_discard(candidate_id):
+        assert candidate_id == candidate["id"]
+        return {**candidate, "status": "ready", "changed_files": []}
+
+    monkeypatch.setattr(server.candidates, "discard_current", capture_discard)
+    status, discarded, _ = _post(
+        f"{base}/api/candidates/{candidate['id']}/discard-current", {}, session_cookie,
+    )
+    assert status == 200, discarded
+    assert discarded["candidate"]["status"] == "ready"
+
+
+def test_candidate_publish_preview_links_latest_experiment(console, monkeypatch) -> None:
+    base, server = console
+    candidate_id = "a" * 12
+    head = "b" * 40
+    server.registry.register_experiment(
+        "EXP-PUBLISH", candidate_id=candidate_id, candidate_commit=head,
+        status="completed",
+    )
+    monkeypatch.setattr(server.candidates, "publish_preview", lambda candidate: {
+        "candidate_id": candidate, "candidate_commit": head, "ready": True,
+    })
+    _, _, viewer_cookie = _post(f"{base}/api/login", {"token": "viewer-token"})
+    status, _ = _get(
+        f"{base}/api/candidates/{candidate_id}/publish-preview", viewer_cookie.split(";")[0],
+    )
+    assert status == 403
+    _, _, cookie = _post(f"{base}/api/login", {"token": "admin-token"})
+    status, payload = _get(
+        f"{base}/api/candidates/{candidate_id}/publish-preview", cookie.split(";")[0],
+    )
+    assert status == 200
+    assert payload["preview"]["latest_experiment"] == {
+        "experiment_id": "EXP-PUBLISH", "status": "completed",
+        "candidate_commit": head, "matches_current_commit": True,
+    }
+
+
+def test_merge_to_main_api_requires_admin_and_passes_checked_commits(console, monkeypatch) -> None:
+    base, server = console
+    candidate_id = "a" * 12
+    main_sha = "b" * 40
+    candidate_sha = "c" * 40
+    calls = []
+
+    def merge(candidate, main, head):
+        calls.append((candidate, main, head))
+        return {"merged_commit": "d" * 40, "remote_pushed": True, "local_main_updated": True}
+
+    monkeypatch.setattr(server.candidates, "merge_to_main", merge)
+    path = f"{base}/api/candidates/{candidate_id}/merge-to-main"
+    payload = {"expected_main_commit": main_sha, "expected_candidate_commit": candidate_sha}
+    status, _, _ = _post(path, payload)
+    assert status == 401
+    _, _, viewer_cookie = _post(f"{base}/api/login", {"token": "viewer-token"})
+    status, _, _ = _post(path, payload, viewer_cookie.split(";")[0])
+    assert status == 403
+    assert calls == []
+    _, _, admin_cookie = _post(f"{base}/api/login", {"token": "admin-token"})
+    status, response, _ = _post(path, payload, admin_cookie.split(";")[0])
+    assert status == 200
+    assert response["merge"]["remote_pushed"] is True
+    assert calls == [(candidate_id, main_sha, candidate_sha)]
+    monkeypatch.setattr(server.candidates, "sync_local_main", lambda candidate: {
+        "main_commit": main_sha, "local_main_updated": candidate == candidate_id,
+    })
+    status, response, _ = _post(
+        f"{base}/api/candidates/{candidate_id}/sync-main", {}, admin_cookie.split(";")[0],
+    )
+    assert status == 200 and response["sync"]["local_main_updated"] is True
+
+
+def test_live_run_snapshot_and_event_stream_use_the_run_id(console) -> None:
+    base, server = console
+    handle = RunHandle(id="CONSOLE-001-EXP-LIVE", test_type="intent-skill", status="finished")
+    handle.results.append({"run_id": "EXP-LIVE-baseline-C1-r1", "outputs": {"INTENT.md": "live result"}})
+    handle.publish({"type": "run_planned", "run_id": "EXP-LIVE-baseline-C1-r1"})
+    handle.publish({"type": "experiment_finished", "experiment_id": "EXP-LIVE", "runs": 1})
+    with server.manager._lock:
+        server.manager._handles[handle.id] = handle
+
+    _, _, cookie = _post(f"{base}/api/login", {"token": "admin-token"})
+    session_cookie = cookie.split(";")[0]
+    status, snapshot = _get(f"{base}/api/runs/{handle.id}", session_cookie)
+    assert status == 200
+    assert snapshot["results"][0]["outputs"]["INTENT.md"] == "live result"
+    request = urllib.request.Request(f"{base}/api/runs/{handle.id}/events")
+    request.add_header("Cookie", session_cookie)
+    with urllib.request.urlopen(request, timeout=10) as response:
+        lines = []
+        while len(lines) < 10:
+            line = response.readline().decode("utf-8")
+            lines.append(line)
+            if '"type": "experiment_finished"' in line:
+                break
+        streamed = "".join(lines)
+    assert '"type": "run_planned"' in streamed
+    assert '"type": "experiment_finished"' in streamed
 
 
 def test_the_session_cookie_is_signed(console) -> None:
@@ -306,6 +550,55 @@ def test_an_unknown_case_is_refused(tmp_path: Path) -> None:
     with pytest.raises(RunRequestError) as exc:
         manager.start({"test_type": "intent-skill", "case_ids": ["INT-NOPE"]})
     assert "unknown case" in str(exc.value)
+
+
+def test_console_run_requires_an_explicit_case_selection(tmp_path: Path) -> None:
+    paths = EvalPaths(tmp_path / "ws")
+    paths.ensure()
+    manager = RunManager(paths)
+    with pytest.raises(RunRequestError, match="至少选择一个用例"):
+        manager.start({"test_type": "intent-skill", "case_ids": []})
+
+
+def test_intent_console_experiment_declares_skill_change_and_rubric(tmp_path: Path) -> None:
+    paths = EvalPaths(tmp_path / "ws")
+    paths.ensure()
+    manager = RunManager(paths, allowed_framework_roots=[tmp_path])
+    spec, _, case_ids, _, _ = manager._prepare({
+        "test_type": "intent-skill",
+        "case_ids": ["INT-S002"],
+        "framework_change": "Ask before assuming",
+        "baseline": {"type": "path", "path": str(tmp_path / "base")},
+        "candidate": {"type": "path", "path": str(tmp_path / "candidate")},
+    })
+    assert case_ids == ["INT-S002"]
+    assert spec.controls.evaluator == "rubric:intent-doc-v1"
+    assert spec.decision_rules.primary_metric == "rubric_score"
+    assert spec.expected_changes == [".claude/skills/intent/*"]
+    assert spec.controls.max_turns == 100
+    assert spec.framework_change == "Ask before assuming"
+
+
+def test_bound_candidate_declares_all_changed_files_as_expected(tmp_path: Path) -> None:
+    paths = EvalPaths(tmp_path / "ws")
+    paths.ensure()
+    manager = RunManager(paths, allowed_framework_roots=[tmp_path])
+    changed = [
+        ".claude/skills/intent/SKILL.md",
+        ".claude/skills/intent/references/clarification.md",
+        ".claude/references/verification.md",
+    ]
+    spec, _, _, _, _ = manager._prepare({
+        "test_type": "intent-skill",
+        "case_ids": ["INT-S002"],
+        "candidate_id": "candidate-1",
+        "max_turns": 120,
+        "candidate_snapshot": {"comparison_files": changed},
+        "baseline": {"type": "path", "path": str(tmp_path / "base")},
+        "candidate": {"type": "path", "path": str(tmp_path / "candidate")},
+    })
+    assert spec.expected_changes == changed
+    assert spec.controls.max_turns == 120
 
 
 # --------------------------------------------------------------------------- #
@@ -409,8 +702,43 @@ def test_a_case_can_be_authored_run_and_streamed(tmp_path: Path, monkeypatch) ->
 
     kinds = [event["type"] for event in events]
     assert "run_planned" in kinds
+    assert "run_started" in kinds
     assert "run_finished" in kinds
     assert kinds[-1] == "experiment_finished", events
+    assert events[-1]["report_url"].endswith("/report.html")
+    assert (paths.reports / events[-1]["report_url"].split("/")[-2] / "report.html").exists()
+    experiment_id = events[-1]["experiment_id"]
+    saved_spec = paths.experiments / f"{experiment_id}.yaml"
+    saved_snapshot = paths.experiments / f"{experiment_id}.dataset.json"
+    assert saved_spec.is_file()
+    snapshot = json.loads(saved_snapshot.read_text(encoding="utf-8"))
+    assert snapshot["case_ids"] == ["TOY001"]
+    assert snapshot["cases"][0]["bundle"]["input_files"]["request.md"] == "hello"
+    (benchmark / "cases" / "TOY001" / "input" / "request.md").write_text("changed", encoding="utf-8")
+    assert json.loads(saved_snapshot.read_text(encoding="utf-8"))["cases"][0]["bundle"]["input_files"]["request.md"] == "hello"
+
+    # A viewer reads the structured report in the console; the original HTML
+    # remains available as an export.
+    server = ConsoleServer(paths, ConsoleConfig(viewer_token="viewer-token"))
+    import socketserver
+
+    httpd = socketserver.ThreadingTCPServer(("127.0.0.1", 0), _handler(server))
+    httpd.daemon_threads = True
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f"http://127.0.0.1:{httpd.server_address[1]}"
+        status, _ = _get(f"{base}/api/experiments/{experiment_id}")
+        assert status == 401
+        _, _, cookie = _post(f"{base}/api/login", {"token": "viewer-token"})
+        status, payload = _get(f"{base}/api/experiments/{experiment_id}", cookie.split(";")[0])
+        assert status == 200
+        assert payload["report"]["metadata"]["experiment_id"] == experiment_id
+        assert payload["snapshot"]["cases"][0]["bundle"]["input_files"]["request.md"] == "hello"
+        assert payload["experiment"]["dataset_hash"] == snapshot["content_hash"]
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
 
     finished = [event for event in events if event["type"] == "run_finished"]
     assert len(finished) == 2  # baseline + candidate

@@ -63,8 +63,10 @@ label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px
   background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 10; flex-wrap: wrap;
 }
-.brand { font-weight: 700; letter-spacing: -.02em; }
-.brand span { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-home { border: 0; padding: 0; background: none; border-radius: 0; font-weight: 700; letter-spacing: -.02em; }
+.brand-home:hover { color: var(--accent); }
+.brand span { color: var(--muted); font-size: 12px; }
 .spacer { margin-left: auto; }
 .tabs { display: flex; gap: 2px; }
 .tab {
@@ -105,10 +107,77 @@ details summary { cursor: pointer; color: var(--ink-2); }
 .case-item { display: flex; gap: 8px; align-items: baseline; padding: 4px 6px; border-radius: 6px; }
 .case-item:hover { background: var(--plane); }
 .case-item code { font-family: var(--mono); font-size: 12px; }
+.hint { background: var(--plane); border: 1px solid var(--grid); border-radius: 8px; padding: 10px 12px; }
+.oracle-editor { min-height: 220px; font-family: var(--mono); font-size: 12px; }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
 .log { font-family: var(--mono); font-size: 11.5px; max-height: 260px; overflow: auto; }
 .log div { padding: 1px 0; border-bottom: 1px solid var(--grid); }
+.diff-file { border: 1px solid var(--grid); border-radius: 8px; margin-top: 10px; overflow: hidden; }
+.diff-file > summary { padding: 9px 12px; background: var(--plane); font-weight: 600; overflow-wrap: anywhere; }
+.diff-stats { float: right; margin-left: 12px; font-weight: 500; }
+.diff-add-count { color: var(--good); }
+.diff-remove-count { color: var(--critical); }
+.diff-file-body { overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.55; }
+.diff-row { display: grid; grid-template-columns: 46px 46px 20px minmax(max-content, 1fr); min-width: max-content; }
+.diff-row[data-kind="add"] { background: rgba(12, 163, 12, .14); }
+.diff-row[data-kind="remove"] { background: rgba(208, 59, 59, .14); }
+.diff-row[data-kind="hunk"] { background: rgba(42, 120, 214, .12); color: var(--ink-2); }
+.diff-row[data-kind="note"] { color: var(--muted); font-style: italic; }
+.diff-number { padding: 0 6px; text-align: right; color: var(--muted); background: rgba(127, 127, 127, .05); user-select: none; }
+.diff-sign { text-align: center; user-select: none; }
+.diff-row[data-kind="add"] .diff-sign { color: var(--good); }
+.diff-row[data-kind="remove"] .diff-sign { color: var(--critical); }
+.diff-code { padding-right: 12px; white-space: pre; }
+.candidate-progress { margin-top: 12px; border-left: 3px solid var(--accent); }
+.candidate-progress ol { margin: 6px 0 0; padding-left: 22px; max-height: 150px; overflow: auto; }
+.candidate-progress li[data-kind="error"] { color: var(--critical); }
+.candidate-progress li .event-detail { display: block; margin: 2px 0 6px; overflow-wrap: anywhere; }
+.candidate-progress progress { width: min(100%, 420px); height: 10px; display: block; margin: 6px 0; }
+.candidate-progress progress[hidden] { display: none; }
+.candidate-file-filter { max-width: 420px; margin: 8px 0; }
+.publish-files { margin: 8px 0; padding-left: 20px; max-height: 180px; overflow: auto; overflow-wrap: anywhere; }
+.publish-meta { margin: 6px 0; overflow-wrap: anywhere; }
+.detail-verdict { border-left: 4px solid var(--accent); padding: 8px 14px; background: var(--plane); border-radius: 0 8px 8px 0; }
+.detail-verdict[data-verdict="improved"] { border-left-color: var(--good); }
+.detail-verdict[data-verdict="invalid"], .detail-verdict[data-verdict="regressed"] { border-left-color: var(--critical); }
+.detail-verdict[data-verdict="inconclusive"] { border-left-color: var(--warning); }
+.detail-verdict h2 { margin-bottom: 4px; font-size: 17px; }
+.detail-verdict p { margin: 4px 0; }
+.detail-table-wrap { overflow-x: auto; }
+.detail-case { border: 1px solid var(--grid); border-radius: 8px; padding: 12px; margin-top: 10px; }
+.compare-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.compare-side { min-width: 0; border: 1px solid var(--grid); border-radius: 8px; background: var(--surface); padding: 12px; }
+.compare-side h3 { font-size: 15px; }
+.compare-side pre { max-height: 520px; }
+.compare-run { border-top: 1px solid var(--grid); padding-top: 10px; margin-top: 10px; }
+.compare-run:first-of-type { border-top: 0; }
+.compare-run p { margin: 4px 0; }
+.intent-compare { margin: 12px 0; padding: 14px; border: 1px solid var(--accent); border-radius: 10px; background: var(--plane); }
+.intent-compare h3 { font-size: 16px; margin-bottom: 4px; }
+.intent-toolbar { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 12px 0; }
+.intent-toolbar .field { flex: 1 1 220px; min-width: 0; margin-bottom: 0; }
+.intent-toolbar select { width: 100%; }
+.intent-view-switch { display: flex; gap: 6px; margin: 8px 0 12px; }
+.intent-view-switch button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.intent-raw-view[hidden], .intent-diff-view[hidden] { display: none; }
+.intent-raw-view .compare-side { background: var(--surface); }
+.intent-raw-view .compare-side pre { max-height: none; }
+.intent-raw-view .small { margin: 0 0 8px; overflow-wrap: anywhere; }
+.intent-section { margin-top: 8px; border: 1px solid var(--grid); border-radius: 8px; background: var(--surface); }
+.intent-section > summary { padding: 8px 10px; font-weight: 600; }
+.intent-section .compare-grid { padding: 0 10px 10px; }
+.intent-section .compare-side { background: var(--plane); }
+.intent-section .compare-side pre { max-height: 460px; }
+.intent-line { display: block; min-height: 1.4em; }
+.intent-line.added { background: rgba(12,163,12,.14); }
+.intent-line.removed { background: rgba(208,59,59,.12); }
+.meta-list { display: grid; grid-template-columns: minmax(125px, 190px) minmax(0, 1fr); gap: 5px 12px; font-size: 13px; }
+.meta-list dt { color: var(--muted); }
+.meta-list dd { margin: 0; overflow-wrap: anywhere; }
+.meta-list ul { margin: 0; padding-left: 18px; }
+@media (max-width: 760px) { .compare-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .meta-list { grid-template-columns: 1fr; gap: 2px; } .meta-list dd { margin-bottom: 8px; } }
 </style>
 </head>
 <body>
@@ -128,11 +197,14 @@ details summary { cursor: pointer; color: var(--ink-2); }
 
 <div id="app" hidden>
   <div class="topbar">
-    <div class="brand">cc-eval 控制台 <span id="role-badge"></span></div>
+    <div class="brand"><button type="button" class="brand-home" id="go-home" aria-label="返回首页">cc-eval 控制台</button><span id="role-badge"></span></div>
     <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-panel="run" aria-selected="true">运行</button>
+      <button class="tab" role="tab" data-panel="home" aria-selected="true">首页</button>
+      <button class="tab" role="tab" data-panel="candidate" aria-selected="false">候选版本</button>
+      <button class="tab" role="tab" data-panel="run" aria-selected="false">运行</button>
       <button class="tab" role="tab" data-panel="cases" aria-selected="false">用例</button>
       <button class="tab" role="tab" data-panel="history" aria-selected="false">历史</button>
+      <button class="tab" role="tab" data-panel="detail" aria-selected="false" id="detail-tab" hidden>实验详情</button>
     </nav>
     <div class="spacer"></div>
     <span class="small muted" id="public-url"></span>
@@ -140,8 +212,94 @@ details summary { cursor: pointer; color: var(--ink-2); }
   </div>
 
   <main>
+    <section class="panel" id="panel-home">
+      <div class="card">
+        <h1>开始一次对比实验</h1>
+        <p class="muted">从 main 创建候选版本，审核改动，再选用例运行对比实验。</p>
+        <div class="grid">
+          <div class="hint"><h2>1. 创建候选版本</h2><p class="small">创建独立分支，告诉 Agent 要怎样修改 intent skill，并审核代码差异。</p><button type="button" data-go="candidate">前往候选版本</button></div>
+          <div class="hint"><h2>2. 准备用例</h2><p class="small">新增或编辑 case、prompt 和 oracle，确认测试输入与评分标准。</p><button type="button" data-go="cases">前往用例</button></div>
+          <div class="hint"><h2>3. 运行与查看结果</h2><p class="small">选择候选版本与用例，运行 baseline 和 candidate 对比。</p><button type="button" data-go="run">配置实验</button></div>
+        </div>
+      </div>
+    </section>
+    <!-- ========================= CANDIDATE ========================= -->
+    <section class="panel" id="panel-candidate" hidden>
+      <div class="card">
+        <h2>从 main 创建 Intent 候选版本</h2>
+        <p class="small muted">创建独立 Git 分支与工作区，并固定创建时 main 的 commit。后续修改不会写入 main。</p>
+        <div class="grid">
+          <div class="field"><label for="candidate-repo">cc-workflow 仓库路径</label><input id="candidate-repo" type="text" placeholder="/home/you/cc-workflow"><div class="small muted">找到可用仓库时会自动填入；这里需要含有 intent skill 和本地 main 分支的 Git 仓库。</div></div>
+          <div class="field"><label for="candidate-name">改动名称</label><input id="candidate-name" type="text" placeholder="改进 intent 澄清"></div>
+        </div>
+        <div class="row"><button class="primary" id="create-candidate">创建候选分支</button><span id="candidate-create-status" class="small muted"></span></div>
+      </div>
+      <div class="card">
+        <h2>候选版本</h2>
+        <div class="field"><label for="candidate-picker">选择候选版本</label><select id="candidate-picker"></select></div>
+        <div id="candidate-detail" hidden>
+          <div class="hint small" id="candidate-meta"></div>
+          <div class="field" style="margin-top:14px">
+            <label for="candidate-instruction">告诉 Agent 要修改什么</label>
+            <textarea id="candidate-instruction" placeholder="例如：遇到影响目标定义的歧义时，先向用户提出关键问题并等待回答；不要把假设写成已确认的 Decision。"></textarea>
+            <div class="small muted">这里的内容会作为执行指令发送。系统不会预先把 SKILL.md 或 references 正文放进提示词；Claude Code 可在临时工作区按需读取。默认允许修改范围包含整个 intent/ 目录及其中的 references/。</div>
+          </div>
+          <div class="field">
+            <label for="candidate-scope">本轮允许修改的路径（每行一个）</label>
+            <textarea id="candidate-scope" spellcheck="false" style="min-height:70px;font-family:var(--mono)">.claude/skills/intent/</textarea>
+            <div class="small muted">填写仓库相对路径；目录以 <code>/</code> 结尾。可添加多个目录或文件，也可填 <code>.claude/</code> 扩大范围。实际改动的所有文件会自动进入下方清单与实验对比，无需逐个指定文件名。</div>
+          </div>
+          <div class="field">
+            <label for="candidate-permission-mode">本轮 Claude Code 权限模式</label>
+            <select id="candidate-permission-mode">
+              <option value="acceptEdits">acceptEdits · 编辑临时副本</option>
+              <option value="bypassPermissions">bypassPermissions · 直接编辑临时工作区</option>
+            </select>
+            <div class="small muted" id="candidate-permission-help"></div>
+          </div>
+          <div class="grid">
+            <div class="field"><label for="candidate-max-turns">最多 Agent 轮数</label><input id="candidate-max-turns" type="number" min="1" max="200" step="1" value="100"></div>
+            <div class="field"><label for="candidate-timeout-minutes">最长运行时间（分钟）</label><input id="candidate-timeout-minutes" type="number" min="1" max="60" step="1" value="30"></div>
+            <div class="field"><label for="candidate-max-budget">最高预算（美元）</label><input id="candidate-max-budget" type="number" min="0.1" max="50" step="0.1" value="10"></div>
+          </div>
+          <p class="small muted">三项限制任一先到就结束本轮。复杂重构可调高，建议分轮提交和检查。每轮修改后先审核文件变更，再提交；未提交的版本不会用于实验。</p>
+          <div class="row"><button id="edit-candidate" class="primary">让 Claude Code 修改</button><span id="candidate-agent-status" class="small muted"></span></div>
+          <div class="error" id="candidate-error"></div>
+          <div class="hint small" id="candidate-scope-warning" hidden></div>
+          <button type="button" id="candidate-discard-unexpected" hidden>清理范围外的未跟踪文件</button>
+          <div class="hint candidate-progress" id="candidate-progress" role="status" aria-live="polite" hidden>
+            <strong id="candidate-progress-title"></strong>
+            <div class="small muted" id="candidate-progress-detail"></div>
+            <div class="small" id="candidate-cost-detail"></div>
+            <progress id="candidate-cost-progress" hidden></progress>
+            <ol class="small" id="candidate-progress-events"></ol>
+          </div>
+          <details id="candidate-diagnostics" hidden><summary>查看运行诊断</summary><pre id="candidate-diagnostics-text"></pre></details>
+          <h3 style="margin-top:18px">文件变更</h3>
+          <div id="candidate-diff-view"></div>
+          <details style="margin-top:12px"><summary>查看原始补丁</summary><pre id="candidate-diff-raw"></pre></details>
+          <details style="margin-top:12px"><summary>Agent 修改说明</summary><pre id="candidate-summary"></pre></details>
+          <div class="row" style="margin-top:14px">
+            <button id="commit-candidate">审核完成，提交并推送候选分支</button>
+            <button id="discard-candidate-current" class="danger" hidden>放弃本轮未提交改动</button>
+            <button id="use-candidate" class="primary">用此版本配置对比实验</button>
+          </div>
+          <div class="small muted">“放弃本轮”只还原本轮未提交的文件改动；之前的提交和远端分支保持原样。</div>
+          <div class="small muted" id="candidate-discard-status" role="status" aria-live="polite"></div>
+          <div class="small muted" id="candidate-commit-status" role="status" aria-live="polite"></div>
+          <div class="error" id="candidate-commit-error"></div>
+          <div class="hint" style="margin-top:18px" id="candidate-publish-section">
+            <h3>合并到 main</h3>
+            <p class="small muted">控制台用本地 Git 在临时工作区合并，成功后推送 origin/main 并同步本地 main。冲突或推送失败时不会改动本地 main。</p>
+            <button type="button" id="candidate-publish-preview">准备合并到 main</button>
+            <div class="small muted" id="candidate-publish-status" role="status" aria-live="polite"></div>
+            <div id="candidate-publish-details" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
     <!-- ============================ RUN ============================ -->
-    <section class="panel" id="panel-run">
+    <section class="panel" id="panel-run" hidden>
       <div class="card">
         <h2>开始一次运行</h2>
         <div class="grid">
@@ -153,10 +311,16 @@ details summary { cursor: pointer; color: var(--ink-2); }
             <div class="field">
               <label>用例</label>
               <div class="case-list" id="case-picker"></div>
+              <div class="small muted" id="case-selection-summary"></div>
             </div>
             <div class="field">
               <label for="repetitions">重复次数</label>
               <input type="number" id="repetitions" value="1" min="1" max="10">
+            </div>
+            <div class="field">
+              <label for="run-max-turns">每次运行最多 Agent 轮数（两侧相同）</label>
+              <input type="number" id="run-max-turns" value="100" min="1" max="200" step="1">
+              <div class="small muted">对每个 baseline/candidate 用例运行分别生效，并保存在实验配置中。</div>
             </div>
             <div class="field">
               <label for="model">模型（两侧必须相同）</label>
@@ -188,17 +352,20 @@ details summary { cursor: pointer; color: var(--ink-2); }
             </div>
           </div>
         </div>
+        <div class="hint small" id="run-binding" style="margin-top:12px"></div>
         <div class="row" style="margin-top:12px">
           <button class="primary" id="start">开始运行</button>
           <span class="small muted" id="run-status"></span>
+          <a id="run-report" hidden>查看实验详情</a>
         </div>
         <div class="error" id="run-error"></div>
       </div>
 
       <div class="card" id="live-card" hidden>
         <h2>实时结果</h2>
+        <p class="small muted">Rubric 得分包含文档结构等指标；当前 Intent rubric 只从 oracle 自动读取预期 Intent 数，不评价实际澄清质量。</p>
         <table id="live-table">
-          <thead><tr><th>运行</th><th>变体</th><th>用例</th><th>状态</th><th>耗时</th><th>Token 数</th><th>产出</th></tr></thead>
+          <thead><tr><th>运行</th><th>变体</th><th>用例</th><th>状态</th><th>Rubric 得分</th><th>耗时</th><th>Token 数</th><th>产出</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="log" id="live-log" style="margin-top:12px"></div>
@@ -206,7 +373,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
 
       <div class="card" id="output-card" hidden>
         <h2>产出</h2>
-        <div class="split" id="output-split"></div>
+        <div id="output-split"></div>
       </div>
     </section>
 
@@ -220,15 +387,28 @@ details summary { cursor: pointer; color: var(--ink-2); }
             <button id="new-case">新建用例</button>
           </div>
         </div>
-        <table id="cases-table"><thead><tr><th>ID</th><th>标题</th><th>标签</th><th>更新时间</th><th></th></tr></thead><tbody></tbody></table>
+        <p class="small muted" id="case-benchmark-summary"></p>
+        <table id="cases-table"><thead><tr><th>ID</th><th>标题</th><th>Oracle</th><th>标签</th><th>更新时间</th><th></th></tr></thead><tbody></tbody></table>
       </div>
 
       <div class="card" id="case-form-card" hidden>
         <h2 id="case-form-title">新建用例</h2>
+        <p class="small muted">保存后会自动加入当前 benchmark。Agent 只看到任务与输入；oracle.yaml 只交给评估器。</p>
         <div id="case-form-fields"></div>
+        <div class="field">
+          <label for="case-prompt">任务指令（Agent 可见） *</label>
+          <textarea id="case-prompt" spellcheck="false"></textarea>
+          <div class="small muted">这里决定测试场景。例如要观察提问行为，可明确要求先提问并等待。当前评估器仍按 INTENT.md 文档评分，提问质量需要单独评估。</div>
+        </div>
+        <div class="field">
+          <label for="case-oracle">Oracle（标准答案） *</label>
+          <textarea id="case-oracle" class="oracle-editor" spellcheck="false"></textarea>
+          <div class="small muted">YAML 格式。当前 Intent rubric 自动读取 <code>expected_output.expected_intent_count</code>；<code>notes</code> 和 <code>expected_entities</code> 可留给人工复核，暂不按澄清质量自动评分。</div>
+        </div>
         <div class="row">
           <button class="primary" id="save-case">保存</button>
           <button id="cancel-case">取消</button>
+          <button id="go-run" hidden>去运行中选择</button>
           <span class="small muted" id="case-form-status"></span>
         </div>
       </div>
@@ -244,6 +424,17 @@ details summary { cursor: pointer; color: var(--ink-2); }
         </table>
       </div>
     </section>
+    <section class="panel" id="panel-detail" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between"><div><h1 id="detail-title">实验详情</h1><div id="detail-subtitle" class="small muted"></div></div><div class="row"><button type="button" id="detail-back">返回历史</button><a id="detail-export" target="_blank" rel="noopener" hidden>导出独立 HTML</a></div></div>
+        <div id="detail-error" class="error"></div>
+      </div>
+      <div class="card" id="detail-summary"></div>
+      <div class="card" id="detail-framework" hidden></div>
+      <div class="card" id="detail-cases"></div>
+      <div class="card" id="detail-metrics"></div>
+      <div class="card" id="detail-provenance"></div>
+    </section>
   </main>
 </div>
 
@@ -251,7 +442,8 @@ details summary { cursor: pointer; color: var(--ink-2); }
 (function () {
   "use strict";
 
-  var state = { types: [], type: null, cases: [], selected: new Set(), runId: null, editing: null };
+  var state = { types: [], type: null, cases: [], selected: new Set(), runId: null, editing: null, canWrite: false, candidate: null, boundCandidateId: null, publishPreview: null,
+    livePlans: new Map(), liveResults: new Map(), seenRunEvents: new Set(), liveSource: null, detailTimer: null, detailRenderKey: "" };
 
   function $(id) { return document.getElementById(id); }
   function el(tag, attrs, children) {
@@ -276,9 +468,27 @@ details summary { cursor: pointer; color: var(--ink-2); }
           if (!path.endsWith("/api/login")) { showLogin("会话已失效,请重新登录"); }
           throw new Error("not authenticated");
         }
-        if (!response.ok) { throw new Error(data.error || ("HTTP " + response.status)); }
+        if (!response.ok) {
+          var message = data.error || ([502, 503, 504].includes(response.status)
+            ? "控制台连接暂时不可用（HTTP " + response.status + "），可能是服务重启或访问隧道短暂中断。"
+            : "HTTP " + response.status);
+          var error = new Error(message);
+          error.status = response.status;
+          throw error;
+        }
         return data;
       });
+    });
+  }
+  function isTransientConnectionError(err) {
+    return err instanceof TypeError || [502, 503, 504].includes(err.status);
+  }
+  function readWithRetry(path, retries, onRetry) {
+    return api(path).catch(function (err) {
+      if (!retries || !isTransientConnectionError(err)) { throw err; }
+      if (onRetry) { onRetry(retries); }
+      return new Promise(function (resolve) { setTimeout(resolve, retries === 2 ? 700 : 1800); })
+        .then(function () { return readWithRetry(path, retries - 1, onRetry); });
     });
   }
 
@@ -289,7 +499,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
     if (message) { $("login-error").textContent = message; }
     $("token").focus();
   }
-  function showApp(role, publicUrl) {
+  function showApp(role, publicUrl, canWrite) {
     $("login").hidden = true;
     $("app").hidden = false;
     if (publicUrl) {
@@ -297,16 +507,17 @@ details summary { cursor: pointer; color: var(--ink-2); }
       $("public-url").innerHTML = "";
       $("public-url").appendChild(link);
     }
-    $("role-badge").textContent = role === "admin" ? "admin（可写）" : "viewer（只读）";
-    var writable = role === "admin";
-    ["test-type", "case-picker", "repetitions", "model", "b-repo", "b-ref", "c-repo", "c-ref", "start", "new-case"]
+    var writable = !!canWrite;
+    $("role-badge").textContent = writable ? "admin（可写）" : "只读";
+    state.canWrite = writable;
+    ["test-type", "case-picker", "repetitions", "run-max-turns", "model", "b-repo", "b-ref", "c-repo", "c-ref", "start", "new-case", "candidate-repo", "candidate-name", "create-candidate", "candidate-instruction", "candidate-scope", "candidate-permission-mode", "candidate-max-turns", "candidate-timeout-minutes", "candidate-max-budget"]
       .forEach(function (id) { $(id).disabled = !writable; });
     $("start").title = writable ? "" : "只读模式：需要 admin token 才能发起运行";
   }
   $("login-button").addEventListener("click", function () {
     $("login-error").textContent = "";
     api("/api/login", { method: "POST", body: JSON.stringify({ token: $("token").value }) })
-      .then(function (data) { showApp(data.role, data.public_url); bootstrap(); })
+      .then(function (data) { showApp(data.role, data.public_url, data.can_write); bootstrap(); routeFromHash(); restoreActiveRun(); if (!location.hash && sessionStorage.getItem("cc-eval-panel") === "candidate") { navigate("candidate"); } })
       .catch(function (err) { $("login-error").textContent = err.message; });
   });
   $("logout").addEventListener("click", function () {
@@ -314,17 +525,489 @@ details summary { cursor: pointer; color: var(--ink-2); }
   });
 
   // ----------------------------------------------------------------- tabs --
-  document.querySelectorAll(".tab").forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      document.querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-selected", "false"); });
-      tab.setAttribute("aria-selected", "true");
-      ["run", "cases", "history"].forEach(function (name) {
-        $("panel-" + name).hidden = name !== tab.dataset.panel;
-      });
-      if (tab.dataset.panel === "history") { loadHistory(); }
-      if (tab.dataset.panel === "cases") { loadCases(); }
+  function navigate(panel) {
+    if (panel !== "detail" && location.hash.indexOf("#experiment/") === 0) {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    $("detail-tab").hidden = panel !== "detail";
+    document.querySelectorAll(".tab").forEach(function (tab) {
+      tab.setAttribute("aria-selected", String(tab.dataset.panel === panel));
     });
+    ["home", "candidate", "run", "cases", "history", "detail"].forEach(function (name) {
+      $("panel-" + name).hidden = name !== panel;
+    });
+    if (panel === "history") { loadHistory(); }
+    if (panel === "cases") { loadCases(); }
+    if (panel === "candidate") { loadCandidates(); }
+    if (panel === "candidate") { sessionStorage.setItem("cc-eval-panel", "candidate"); }
+    else { sessionStorage.removeItem("cc-eval-panel"); }
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () { navigate(tab.dataset.panel); });
   });
+  $("go-home").addEventListener("click", function () { navigate("home"); });
+  document.querySelectorAll("[data-go]").forEach(function (button) {
+    button.addEventListener("click", function () { navigate(button.dataset.go); });
+  });
+  $("detail-back").addEventListener("click", function () { navigate("history"); });
+
+  // ----------------------------------------------------------- candidates --
+  function updateCandidatePermissionHelp() {
+    $("candidate-permission-help").textContent = $("candidate-permission-mode").value === "bypassPermissions"
+      ? "跳过 Claude Code 的交互批准，可直接修改临时工作区内选定的 .claude/ 路径。控制台仍限制可用工具与修改路径；差异需审核后提交。"
+      : "Claude Code 会编辑 .claude/ 文件的临时副本；控制台把范围内差异映射回候选分支，供你审核。";
+  }
+  $("candidate-permission-mode").addEventListener("change", updateCandidatePermissionHelp);
+  function loadCandidates(preferredId) {
+    api("/api/candidates").then(function (data) {
+      var items = data.candidates || [];
+      if (!$("candidate-repo").value && data.suggested_repository) { $("candidate-repo").value = data.suggested_repository; }
+      var picker = $("candidate-picker");
+      var selected = preferredId || picker.value || sessionStorage.getItem("cc-eval-candidate") || (items.length ? items[items.length - 1].id : "");
+      picker.innerHTML = "";
+      items.forEach(function (item) {
+        picker.appendChild(el("option", { value: item.id, text: item.name + " · " + item.branch }));
+      });
+      var candidate = items.find(function (item) { return item.id === selected; }) || items[items.length - 1] || null;
+      picker.value = candidate ? candidate.id : "";
+      if (candidate) { sessionStorage.setItem("cc-eval-candidate", candidate.id); }
+      renderCandidate(candidate);
+    }).catch(function (err) { $("candidate-create-status").textContent = err.message; });
+  }
+  function parseCandidateDiff(patch) {
+    if (!patch || !patch.trim()) { return []; }
+    var files = [], file = null, oldLine = 0, newLine = 0, oldRemaining = 0, newRemaining = 0, inHunk = false;
+    function start(path) {
+      file = { path: path || "未命名文件", oldPath: "", newPath: "", added: 0, removed: 0, rows: [] };
+      files.push(file);
+      inHunk = false;
+    }
+    function pathFromHeader(line) {
+      return line.slice(4).split("\t")[0].replace(/^"?[ab]\//, "").replace(/"$/, "");
+    }
+    patch.replace(/\r\n?/g, "\n").split("\n").forEach(function (line) {
+      if (line.startsWith("diff --git ")) {
+        var match = / b\/(.+)$/.exec(line);
+        start(match ? match[1] : "未命名文件");
+      } else if (!inHunk && line.startsWith("--- ")) {
+        if (!file || file.rows.length) { start(); }
+        file.oldPath = pathFromHeader(line);
+        if (file.path === "未命名文件") { file.path = file.oldPath; }
+      } else if (!inHunk && line.startsWith("+++ ")) {
+        if (!file) { start(); }
+        file.newPath = pathFromHeader(line);
+        if (file.newPath !== "/dev/null") { file.path = file.newPath; }
+      } else if (line.startsWith("@@ ")) {
+        if (!file) { start(); }
+        var range = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
+        if (range) {
+          oldLine = Number(range[1]); newLine = Number(range[3]);
+          oldRemaining = range[2] === undefined ? 1 : Number(range[2]);
+          newRemaining = range[4] === undefined ? 1 : Number(range[4]);
+        }
+        file.rows.push({ kind: "hunk", text: range ? "旧版第 " + oldLine + " 行附近 → 新版第 " + newLine + " 行附近" : line });
+        inHunk = true;
+      } else if (inHunk && line.startsWith("+")) {
+        file.rows.push({ kind: "add", oldNumber: "", newNumber: newLine++, text: line.slice(1) });
+        file.added++;
+        newRemaining--;
+      } else if (inHunk && line.startsWith("-")) {
+        file.rows.push({ kind: "remove", oldNumber: oldLine++, newNumber: "", text: line.slice(1) });
+        file.removed++;
+        oldRemaining--;
+      } else if (inHunk && line.startsWith(" ")) {
+        file.rows.push({ kind: "context", oldNumber: oldLine++, newNumber: newLine++, text: line.slice(1) });
+        oldRemaining--; newRemaining--;
+      } else if (file && line.startsWith("\\") && file.rows.length) {
+        file.rows.push({ kind: "note", text: line });
+      } else if (file && line.startsWith("Binary files ")) {
+        file.rows.push({ kind: "note", text: line });
+      }
+      if (inHunk && oldRemaining <= 0 && newRemaining <= 0) { inHunk = false; }
+    });
+    return files.filter(function (item) { return item.rows.length || item.oldPath || item.newPath; });
+  }
+  function renderCandidateDiff(patch, view) {
+    view = view || $("candidate-diff-view");
+    view.replaceChildren();
+    var files = parseCandidateDiff(patch);
+    if (!files.length) { view.appendChild(el("p", { class: "small muted", text: "相对基线暂无改动" })); return; }
+    var added = files.reduce(function (total, item) { return total + item.added; }, 0);
+    var removed = files.reduce(function (total, item) { return total + item.removed; }, 0);
+    view.appendChild(el("p", { class: "small muted", text: files.length + " 个文件变更 · 新增 " + added + " 行 · 删除 " + removed + " 行" }));
+    view.appendChild(el("p", { class: "small muted", text: "左侧行号对应基线，右侧行号对应候选；红色是删除，绿色是新增。" }));
+    var filter = el("select", { class: "candidate-file-filter", "aria-label": "按文件查看变更" });
+    filter.appendChild(el("option", { value: "", text: "全部变更文件" }));
+    files.forEach(function (file, index) {
+      filter.appendChild(el("option", { value: String(index), text: file.path + "（+" + file.added + " / −" + file.removed + "）" }));
+    });
+    view.appendChild(filter);
+    var cards = [];
+    files.forEach(function (file) {
+      var status = file.oldPath === "/dev/null" ? "新增 · " : file.newPath === "/dev/null" ? "删除 · " : "";
+      var summary = el("summary", {}, [
+        el("code", { text: status + file.path }),
+        el("span", { class: "diff-stats" }, [
+          el("span", { class: "diff-add-count", text: "+" + file.added }),
+          document.createTextNode("  "),
+          el("span", { class: "diff-remove-count", text: "−" + file.removed })
+        ])
+      ]);
+      var card = el("details", { class: "diff-file" }, [summary]);
+      card.open = files.length <= 4;
+      var body = el("div", { class: "diff-file-body" });
+      file.rows.forEach(function (row) {
+        var sign = row.kind === "add" ? "+" : row.kind === "remove" ? "−" : "";
+        body.appendChild(el("div", { class: "diff-row", "data-kind": row.kind }, [
+          el("span", { class: "diff-number", text: row.oldNumber === undefined ? "" : row.oldNumber }),
+          el("span", { class: "diff-number", text: row.newNumber === undefined ? "" : row.newNumber }),
+          el("span", { class: "diff-sign", text: sign }),
+          el("span", { class: "diff-code", text: row.text })
+        ]));
+      });
+      card.appendChild(body);
+      view.appendChild(card);
+      cards.push(card);
+    });
+    filter.addEventListener("change", function () {
+      cards.forEach(function (card, index) {
+        card.hidden = filter.value !== "" && Number(filter.value) !== index;
+        if (!card.hidden && filter.value !== "") { card.open = true; }
+      });
+    });
+  }
+  function renderCandidate(candidate) {
+    var previousId = state.candidate && state.candidate.id;
+    var previousCommit = state.candidate && state.candidate.candidate_commit;
+    state.candidate = candidate;
+    $("candidate-detail").hidden = !candidate;
+    if (!candidate) { return; }
+    if (candidate.id !== previousId || candidate.candidate_commit !== previousCommit || candidate.changed_files.length || candidate.status === "editing") {
+      state.publishPreview = null;
+      $("candidate-publish-details").hidden = true;
+      $("candidate-publish-status").textContent = "";
+    }
+    if (candidate.id !== previousId) {
+      $("candidate-instruction").value = candidate.instruction || "";
+      $("candidate-scope").value = (candidate.edit_scope || [".claude/skills/intent/"]).join("\n");
+      $("candidate-permission-mode").value = candidate.permission_mode || "acceptEdits";
+      updateCandidatePermissionHelp();
+      var limits = candidate.edit_limits || { max_turns: 100, timeout_sec: 1800, max_budget_usd: 10 };
+      $("candidate-max-turns").value = limits.max_turns;
+      $("candidate-timeout-minutes").value = limits.timeout_sec / 60;
+      $("candidate-max-budget").value = limits.max_budget_usd;
+      $("candidate-commit-error").textContent = "";
+    }
+    $("candidate-meta").textContent = "基线 main: " + candidate.baseline_commit +
+      " · 候选分支: " + candidate.branch + " · 当前提交: " + candidate.candidate_commit +
+      " · 工作区: " + candidate.worktree;
+    var pushStatus = candidate.push_status || "not_committed";
+    $("candidate-commit-status").textContent = pushStatus === "pushed"
+      ? "已推送到 origin/" + candidate.branch + " · " + candidate.candidate_commit.slice(0, 12)
+      : pushStatus === "failed" ? "本地已提交，远端推送失败。可点击下方按钮重试。"
+      : pushStatus === "pending" ? "本地已提交，尚未推送到远端。"
+      : "审核改动后，将提交并推送到 origin/" + candidate.branch + "。";
+    $("candidate-commit-error").textContent = candidate.push_error || "";
+    $("candidate-discard-status").textContent = candidate.discarded_at && !candidate.changed_files.length
+      ? "本轮未提交改动已放弃；候选分支仍在上一提交，可以重新发起修改。" : "";
+    var statusLabels = { ready: "待修改", editing: "正在修改", review: "待审核", committed: "已提交", failed: "修改失败", interrupted: "修改中断" };
+    $("candidate-agent-status").textContent = "状态：" + (candidate.status === "failed" && candidate.ready_for_experiment
+      ? "已提交（最近一次修改失败）" : statusLabels[candidate.status] || candidate.status) +
+      " · 本轮模式：" + (candidate.permission_mode || "acceptEdits");
+    var progress = $("candidate-progress");
+    var limits = candidate.edit_limits || { max_turns: 100, timeout_sec: 1800, max_budget_usd: 10 };
+    var events = candidate.progress_events || [];
+    progress.hidden = !candidate.started_at;
+    if (candidate.started_at) {
+      var elapsed = Math.max(0, Math.floor((Date.now() - Date.parse(candidate.started_at)) / 1000));
+      var minutes = Math.floor(elapsed / 60);
+      var seconds = String(elapsed % 60).padStart(2, "0");
+      $("candidate-progress-title").textContent = candidate.status === "editing" ? "Claude Code 正在修改 · 已运行 " + minutes + ":" + seconds : "本轮修改记录";
+      var last = candidate.last_activity_at ? new Date(candidate.last_activity_at).toLocaleTimeString() : "尚无运行事件";
+      var lastAction = candidate.last_action_at ? new Date(candidate.last_action_at).toLocaleTimeString() : "尚无操作";
+      var quietSeconds = candidate.last_activity_at ? Math.max(0, Math.floor((Date.now() - Date.parse(candidate.last_activity_at)) / 1000)) : elapsed;
+      var turnInfo = typeof candidate.reported_turns === "number"
+        ? "Claude 轮数 " + candidate.reported_turns + " / 上限 " + limits.max_turns
+        : "已收到 " + (candidate.turn_count || 0) + " 条 assistant 消息 · 轮数上限 " + limits.max_turns;
+      $("candidate-progress-detail").textContent = candidate.status === "editing"
+        ? "最近运行信号：" + last + " · 最近可见操作：" + lastAction + " · " + turnInfo + " · 已收到 " + (candidate.event_count || 0) + " 条事件。" + (quietSeconds >= 30 ? "已 " + Math.floor(quietSeconds / 60) + " 分 " + quietSeconds % 60 + " 秒未收到新事件，正在等待 Claude Code 返回。" : "正在接收运行事件。") + "最长 " + Math.round(limits.timeout_sec / 60) + " 分钟，预算上限 $" + limits.max_budget_usd + "。"
+        : "开始：" + new Date(candidate.started_at).toLocaleString() + (candidate.ended_at ? " · 结束：" + new Date(candidate.ended_at).toLocaleString() : "") + " · " + turnInfo;
+      var cost = candidate.reported_cost_usd;
+      var costProgress = $("candidate-cost-progress");
+      if (typeof cost === "number" && Number.isFinite(cost)) {
+        var remaining = Math.max(0, limits.max_budget_usd - cost);
+        $("candidate-cost-detail").textContent = "Claude Code 已报告费用：$" + cost.toFixed(4) + " / 上限 $" + Number(limits.max_budget_usd).toFixed(2) + " · 剩余约 $" + remaining.toFixed(4);
+        costProgress.max = limits.max_budget_usd;
+        costProgress.value = Math.min(cost, limits.max_budget_usd);
+        costProgress.hidden = false;
+      } else {
+        $("candidate-cost-detail").textContent = candidate.status === "editing"
+          ? "费用：等待 Claude Code 上报（上限 $" + Number(limits.max_budget_usd).toFixed(2) + "）。当前模型在运行中没有提供可用的费用数字；结束后会自动更新。"
+          : "本轮没有保存可用的费用数据，无法准确计算已花金额。";
+        costProgress.hidden = true;
+      }
+      var list = $("candidate-progress-events");
+      list.replaceChildren();
+      events.slice(-30).forEach(function (event) {
+        var item = el("li", { "data-kind": event.kind || "system", text: new Date(event.at).toLocaleTimeString() + " · " + event.label });
+        if (event.detail) { item.appendChild(el("span", { class: "event-detail muted", text: event.detail })); }
+        list.appendChild(item);
+      });
+    }
+    var diagnostics = $("candidate-diagnostics");
+    diagnostics.hidden = !candidate.runtime_status && !candidate.stderr_tail;
+    diagnostics.open = candidate.status === "failed" && !!candidate.stderr_tail;
+    $("candidate-diagnostics-text").textContent = "Claude 状态：" + (candidate.runtime_status || "未知") +
+      "\n退出码：" + (candidate.exit_code === null || candidate.exit_code === undefined ? "未知" : candidate.exit_code) +
+      (candidate.stderr_tail ? "\n标准错误末尾：\n" + candidate.stderr_tail : "");
+    renderCandidateDiff(candidate.diff || "");
+    $("candidate-diff-raw").textContent = candidate.diff || "相对 baseline 暂无改动";
+    $("candidate-summary").textContent = candidate.agent_summary || "暂无";
+    var denials = candidate.permission_denials || [];
+    $("candidate-error").textContent = denials.length
+      ? "工具权限被拒绝（" + denials.length + " 次）：" + denials[denials.length - 1] + (candidate.error ? "\n最终结果：" + candidate.error : "")
+      : candidate.error || "";
+    var unexpected = candidate.unexpected_files || [];
+    var violations = candidate.scope_violations || [];
+    var warning = $("candidate-scope-warning");
+    warning.hidden = !unexpected.length && !violations.length;
+    warning.textContent = unexpected.length
+      ? "候选工作区已有本轮范围外的改动：" + unexpected.join("、") + "。这些文件会阻止下一轮修改和提交。" + (candidate.can_discard_unexpected ? "可用下方按钮清理这些未跟踪文件。" : "其中有已跟踪文件的改动，需要人工检查。")
+      : violations.length ? "Claude Code 的范围外修改已被拒绝或隔离：" + violations.join("、") + "。这些改动不会进入候选分支。" : "";
+    $("candidate-discard-unexpected").hidden = !candidate.can_discard_unexpected;
+    $("candidate-discard-unexpected").disabled = !state.canWrite || candidate.status === "editing";
+    $("candidate-scope").disabled = !state.canWrite || candidate.status === "editing";
+    $("candidate-permission-mode").disabled = !state.canWrite || candidate.status === "editing";
+    ["candidate-max-turns", "candidate-timeout-minutes", "candidate-max-budget"].forEach(function (id) { $(id).disabled = !state.canWrite || candidate.status === "editing"; });
+    $("edit-candidate").disabled = !state.canWrite || candidate.status === "editing" || candidate.changed_files.length > 0;
+    $("commit-candidate").textContent = candidate.changed_files.length
+      ? "审核完成，提交并推送候选分支"
+      : ["failed", "pending"].includes(pushStatus) ? "重试推送候选分支"
+      : pushStatus === "pushed" ? "候选分支已推送" : "暂无待提交改动";
+    $("commit-candidate").disabled = !state.canWrite || candidate.status === "editing" ||
+      (!candidate.changed_files.length && !["failed", "pending"].includes(pushStatus)) || unexpected.length > 0;
+    $("discard-candidate-current").hidden = !candidate.can_discard_current;
+    $("discard-candidate-current").disabled = !state.canWrite || candidate.status === "editing";
+    $("use-candidate").disabled = !state.canWrite || !candidate.ready_for_experiment;
+    $("candidate-publish-preview").disabled = !state.canWrite || candidate.status === "editing";
+  }
+  function renderPublishPreview(preview) {
+    var box = $("candidate-publish-details");
+    box.innerHTML = "";
+    box.hidden = false;
+    box.appendChild(el("p", { class: "small publish-meta", text: "仓库：" + preview.repository + " · 目标：main · 来源：" + preview.branch }));
+    box.appendChild(el("p", { class: "small publish-meta", text: "远端 main：" + preview.main_commit + " · 候选提交：" + preview.candidate_commit }));
+    if (preview.ahead !== null) {
+      box.appendChild(el("p", { class: "small publish-meta", text: "相对当前 main：领先 " + preview.ahead + " 个提交，落后 " + preview.behind + " 个提交。" }));
+    }
+    if (preview.local_main_behind) {
+      box.appendChild(el("p", { class: "small publish-meta", text: "本地 main 落后于远端；推送成功后会自动快进同步。" }));
+    }
+    if (preview.changed_files.length) {
+      box.appendChild(el("strong", { class: "small", text: "将比较的文件（" + preview.changed_files.length + "）" }));
+      var files = el("ul", { class: "publish-files small" });
+      preview.changed_files.forEach(function (path) { files.appendChild(el("li", { text: path })); });
+      box.appendChild(files);
+    }
+    var experiment = preview.latest_experiment;
+    var evaluation = experiment
+      ? "最近实验：" + experiment.experiment_id + " · " + experiment.status + " · " +
+        (experiment.matches_current_commit ? "使用当前候选提交" : "使用旧的候选提交，建议重新运行")
+      : "此候选版本尚无实验记录，建议先运行对比实验。";
+    box.appendChild(el("p", { class: "small publish-meta", text: evaluation }));
+    if (experiment) {
+      var link = el("a", { href: "#experiment/" + encodeURIComponent(experiment.experiment_id), text: "查看实验详情" });
+      box.appendChild(link);
+    }
+    if (preview.already_merged) {
+      box.appendChild(el("p", { class: "small publish-meta", text: "origin/main 已包含当前候选提交：" + preview.main_commit }));
+      if (preview.local_main_behind) {
+        var syncButton = el("button", { type: "button", text: "同步本地 main" });
+        syncButton.addEventListener("click", function () {
+          syncButton.disabled = true;
+          $("candidate-publish-status").textContent = "正在同步本地 main…";
+          api("/api/candidates/" + preview.candidate_id + "/sync-main", { method: "POST", body: "{}" })
+            .then(function () {
+              if (!state.candidate || state.candidate.id !== preview.candidate_id) { return; }
+              renderPublishPreview(Object.assign({}, preview, {
+                local_main_behind: false, local_main_commit: preview.main_commit,
+                local_main_contains_candidate: true
+              }));
+              $("candidate-publish-status").textContent = "本地 main 已同步。";
+            })
+            .catch(function (err) {
+              $("candidate-publish-status").textContent = err.message;
+              syncButton.disabled = false;
+            });
+        });
+        box.appendChild(syncButton);
+      }
+      $("candidate-publish-status").textContent = preview.local_main_contains_candidate
+        ? "远端和本地 main 已包含候选提交。"
+        : preview.local_main_behind
+          ? "远端已包含候选提交；本地 main 尚未同步。"
+          : "远端已包含候选提交；本地 main 状态需要人工核对。";
+      return;
+    }
+    if (preview.reasons.length) {
+      var issues = el("ul", { class: "small" });
+      preview.reasons.forEach(function (reason) { issues.appendChild(el("li", { text: reason })); });
+      box.appendChild(issues);
+      $("candidate-publish-status").textContent = "尚不能合并，请先处理下面的问题。";
+      return;
+    }
+    if (preview.behind > 0) {
+      box.appendChild(el("p", { class: "small muted", text: "main 已有新提交；本地 Git 会以当前 main 为基础尝试合并，发生冲突时会停止。" }));
+    }
+    var action = el("button", { type: "button", class: "primary", text: "确认合并并推送 main" });
+    action.addEventListener("click", function () {
+      if (!state.candidate || state.candidate.id !== preview.candidate_id) { return; }
+      if (!window.confirm("确认将候选版本合并到 main 并推送 origin/main？\n\nmain: " + preview.main_commit +
+        "\n候选: " + preview.candidate_commit + "\n\n这会更新远端 main。")) { return; }
+      action.disabled = true;
+      $("candidate-publish-status").textContent = "正在临时工作区合并并推送 main…";
+      api("/api/candidates/" + preview.candidate_id + "/merge-to-main", {
+        method: "POST", body: JSON.stringify({
+          expected_main_commit: preview.main_commit,
+          expected_candidate_commit: preview.candidate_commit
+        })
+      }).then(function (data) {
+        if (!state.candidate || state.candidate.id !== preview.candidate_id) { return; }
+        state.publishPreview = null;
+        box.replaceChildren(el("p", { class: "small", text: "已合并并推送 origin/main：" + data.merge.merged_commit }));
+        $("candidate-publish-status").textContent = data.merge.local_main_updated
+          ? "合并完成，本地 main 已同步。"
+          : "远端 main 已合并；本地 main 同步失败：" + data.merge.local_main_sync_error;
+        loadCandidates(preview.candidate_id);
+      }).catch(function (err) {
+        if (!state.candidate || state.candidate.id !== preview.candidate_id) { return; }
+        state.publishPreview = null;
+        if (!isTransientConnectionError(err)) {
+          box.hidden = true;
+          $("candidate-publish-status").textContent = err.message + " 请重新检查合并条件。";
+          return;
+        }
+        $("candidate-publish-status").textContent = "连接中断，正在核对 origin/main；不会自动重复推送…";
+        readWithRetry("/api/candidates/" + preview.candidate_id + "/publish-preview", 2)
+          .then(function (data) {
+            if (!state.candidate || state.candidate.id !== preview.candidate_id) { return; }
+            renderPublishPreview(data.preview);
+            if (!data.preview.already_merged) {
+              $("candidate-publish-status").textContent = "尚未确认合并完成；请稍后重新检查远端状态，再决定是否重试。";
+            }
+          }).catch(function () {
+            box.hidden = true;
+            $("candidate-publish-status").textContent = "连接中断且无法确认远端状态。请稍后点击“准备合并到 main”核对，暂勿重复提交。";
+          });
+      });
+    });
+    box.appendChild(action);
+    $("candidate-publish-status").textContent = "预检查通过；请核对文件和实验后确认合并。";
+  }
+  $("candidate-publish-preview").addEventListener("click", function () {
+    var candidate = state.candidate;
+    if (!candidate) { return; }
+    var button = $("candidate-publish-preview");
+    button.disabled = true;
+    $("candidate-publish-details").hidden = true;
+    $("candidate-publish-status").textContent = "正在读取 origin 上的分支状态…";
+    readWithRetry("/api/candidates/" + candidate.id + "/publish-preview", 2, function () {
+      $("candidate-publish-status").textContent = "连接暂时不可用，正在重试预检查…";
+    })
+      .then(function (data) {
+        if (!state.candidate || state.candidate.id !== candidate.id || state.candidate.candidate_commit !== candidate.candidate_commit) { return; }
+        state.publishPreview = data.preview;
+        renderPublishPreview(data.preview);
+      })
+      .catch(function (err) { $("candidate-publish-status").textContent = err.message; })
+      .finally(function () { button.disabled = !state.canWrite || (state.candidate && state.candidate.status === "editing"); });
+  });
+  $("candidate-picker").addEventListener("change", function () { sessionStorage.setItem("cc-eval-candidate", this.value); loadCandidates(this.value); });
+  $("create-candidate").addEventListener("click", function () {
+    var repository = $("candidate-repo").value.trim();
+    if (!repository) { $("candidate-create-status").textContent = "请填写 cc-workflow 仓库路径"; return; }
+    $("candidate-create-status").textContent = "正在创建…";
+    $("create-candidate").disabled = true;
+    api("/api/candidates", { method: "POST", body: JSON.stringify({
+      repository: repository, name: $("candidate-name").value
+    }) }).then(function (data) {
+      $("candidate-create-status").textContent = "已创建 " + data.candidate.branch;
+      loadCandidates(data.candidate.id);
+    }).catch(function (err) { $("candidate-create-status").textContent = err.message; })
+      .finally(function () { $("create-candidate").disabled = !state.canWrite; });
+  });
+  $("edit-candidate").addEventListener("click", function () {
+    if (!state.candidate) { return; }
+    $("candidate-error").textContent = "";
+    var turns = Number($("candidate-max-turns").value);
+    var minutes = Number($("candidate-timeout-minutes").value);
+    var budget = Number($("candidate-max-budget").value);
+    if (!Number.isInteger(turns) || turns < 1 || turns > 200 || !Number.isInteger(minutes) || minutes < 1 || minutes > 60 || !Number.isFinite(budget) || budget < 0.1 || budget > 50) {
+      $("candidate-error").textContent = "请检查轮数（1–200）、时间（1–60 分钟）和预算（0.1–50 美元）。";
+      return;
+    }
+    api("/api/candidates/" + state.candidate.id + "/edit", { method: "POST", body: JSON.stringify({
+      instruction: $("candidate-instruction").value,
+      allowed_paths: $("candidate-scope").value.split("\n").map(function (path) { return path.trim(); }).filter(Boolean),
+      permission_mode: $("candidate-permission-mode").value,
+      limits: { max_turns: turns, timeout_sec: minutes * 60, max_budget_usd: budget }
+    }) }).then(function (data) { renderCandidate(data.candidate); })
+      .catch(function (err) { $("candidate-error").textContent = err.message; });
+  });
+  $("candidate-discard-unexpected").addEventListener("click", function () {
+    if (!state.candidate) { return; }
+    $("candidate-error").textContent = "";
+    api("/api/candidates/" + state.candidate.id + "/discard-unexpected", { method: "POST", body: "{}" })
+      .then(function (data) { renderCandidate(data.candidate); })
+      .catch(function (err) { $("candidate-error").textContent = err.message; });
+  });
+  $("commit-candidate").addEventListener("click", function () {
+    if (!state.candidate) { return; }
+    var button = $("commit-candidate");
+    button.disabled = true;
+    button.textContent = state.candidate.changed_files.length ? "正在提交并推送…" : "正在重试推送…";
+    $("candidate-commit-status").textContent = "正在连接 origin，完成后会显示推送结果。";
+    $("candidate-commit-error").textContent = "";
+    api("/api/candidates/" + state.candidate.id + "/commit", { method: "POST", body: "{}" })
+      .then(function (data) { renderCandidate(data.candidate); })
+      .catch(function (err) {
+        renderCandidate(state.candidate);
+        $("candidate-commit-error").textContent = err.message;
+      });
+  });
+  $("discard-candidate-current").addEventListener("click", function () {
+    var candidate = state.candidate;
+    if (!candidate || !candidate.can_discard_current) { return; }
+    if (!window.confirm("放弃以下本轮未提交的改动，并回到上一提交？\n\n" + candidate.changed_files.join("\n") + "\n\n已提交和已推送的版本不会改变。")) { return; }
+    var button = $("discard-candidate-current");
+    button.disabled = true;
+    button.textContent = "正在放弃本轮改动…";
+    $("candidate-commit-error").textContent = "";
+    api("/api/candidates/" + candidate.id + "/discard-current", { method: "POST", body: "{}" })
+      .then(function (data) { renderCandidate(data.candidate); })
+      .catch(function (err) {
+        renderCandidate(state.candidate);
+        $("candidate-commit-error").textContent = err.message;
+      })
+      .finally(function () { button.textContent = "放弃本轮未提交改动"; });
+  });
+  $("use-candidate").addEventListener("click", function () {
+    var candidate = state.candidate;
+    if (!candidate || !candidate.ready_for_experiment) { return; }
+    $("b-repo").value = candidate.repository;
+    $("c-repo").value = candidate.repository;
+    $("b-ref").value = candidate.baseline_commit;
+    $("c-ref").value = candidate.candidate_commit;
+    state.boundCandidateId = candidate.id;
+    updateBinding();
+    document.querySelector('[data-panel="run"]').click();
+  });
+  setInterval(function () {
+    if (state.candidate && state.candidate.status === "editing" && !document.hidden) {
+      loadCandidates(state.candidate.id);
+    }
+  }, 2500);
 
   // -------------------------------------------------------------- bootstrap --
   function bootstrap() {
@@ -344,17 +1027,28 @@ details summary { cursor: pointer; color: var(--ink-2); }
     $("test-type").value = name;
     $("cases-type").value = name;
     state.selected = new Set();
+    if (name !== "intent-skill") { state.boundCandidateId = null; }
+    updateBinding();
     loadCases();
   }
   $("test-type").addEventListener("change", function () { setType(this.value); });
   $("cases-type").addEventListener("change", function () { setType(this.value); });
+  ["b-repo", "b-ref", "c-repo", "c-ref"].forEach(function (id) {
+    $(id).addEventListener("input", function () { state.boundCandidateId = null; updateBinding(); });
+  });
 
   function loadCases() {
     if (!state.type) { return; }
     api("/api/test-types/" + state.type.name + "/cases").then(function (data) {
       state.cases = data.cases;
+      state.selected.forEach(function (id) {
+        if (!state.cases.some(function (item) { return item.case_id === id && item.registered && item.has_oracle; })) {
+          state.selected.delete(id);
+        }
+      });
       renderCasePicker();
       renderCaseTable();
+      updateBinding();
     }).catch(function (err) {
       if (err.message !== "not authenticated") {
         $("run-error").textContent = "加载用例失败:" + err.message;
@@ -367,18 +1061,33 @@ details summary { cursor: pointer; color: var(--ink-2); }
     state.cases.forEach(function (item) {
       var input = el("input", { type: "checkbox" });
       input.checked = state.selected.has(item.case_id);
+      input.disabled = !state.canWrite || !item.registered || !item.has_oracle;
       input.addEventListener("change", function () {
         if (input.checked) { state.selected.add(item.case_id); } else { state.selected.delete(item.case_id); }
+        updateBinding();
       });
       var label = el("label", { style: "display:flex;gap:8px;align-items:baseline;margin:0" });
       label.appendChild(input);
       label.appendChild(el("code", { text: item.case_id }));
       if (item.title) { label.appendChild(el("span", { class: "muted small", text: item.title })); }
+      if (!item.has_oracle) { label.appendChild(el("span", { class: "pill pill-err", text: "缺少 Oracle" })); }
+      if (!item.registered) { label.appendChild(el("span", { class: "pill pill-err", text: "未加入 benchmark" })); }
       box.appendChild(el("div", { class: "case-item" }, [label]));
     });
     if (!state.cases.length) {
       box.appendChild(el("p", { class: "muted small", text: "还没有用例 —— 去「用例」页新建一个。" }));
     }
+  }
+  function updateBinding() {
+    if (!state.type) { return; }
+    var count = state.selected.size;
+    $("case-selection-summary").textContent = "已选 " + count + " 个用例；不选择时不会启动运行。";
+    $("case-benchmark-summary").textContent = "归属：" + state.type.benchmark + " · 评估器：" + state.type.evaluator;
+    $("run-binding").textContent = "本次连接：" + state.type.benchmark + " → " +
+      (count ? Array.from(state.selected).join("、") : "请选择至少一个用例") +
+      " → " + state.type.evaluator +
+      (state.boundCandidateId ? " · 已绑定已审核候选版本 " + state.boundCandidateId : "") +
+      "。每个用例的 oracle.yaml 在评估阶段读取，不会提供给 Agent。";
   }
   function renderCaseTable() {
     var body = $("cases-table").querySelector("tbody");
@@ -386,8 +1095,10 @@ details summary { cursor: pointer; color: var(--ink-2); }
     state.cases.forEach(function (item) {
       var actions = el("td");
       var edit = el("button", { class: "small", text: "编辑" });
+      edit.disabled = !state.canWrite;
       edit.addEventListener("click", function () { openCaseForm(item); });
       var del = el("button", { class: "small danger", text: "删除" });
+      del.disabled = !state.canWrite;
       del.addEventListener("click", function () {
         if (!confirm("删除用例 " + item.case_id + "？")) { return; }
         api("/api/test-types/" + state.type.name + "/cases/" + item.case_id, { method: "DELETE" })
@@ -399,6 +1110,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
       body.appendChild(el("tr", {}, [
         el("td", {}, [el("code", { text: item.case_id })]),
         el("td", { text: item.title || "" }),
+        el("td", {}, [el("span", { class: "pill " + (item.has_oracle ? "pill-ok" : "pill-err"), text: item.has_oracle ? "已配置" : "未配置" })]),
         el("td", { class: "muted small", text: (item.tags || []).join(", ") }),
         el("td", { class: "muted small", text: (item.updated_at || "").slice(0, 19).replace("T", " ") }),
         actions
@@ -411,6 +1123,11 @@ details summary { cursor: pointer; color: var(--ink-2); }
     state.editing = item || null;
     $("case-form-card").hidden = false;
     $("case-form-title").textContent = item ? ("编辑用例 " + item.case_id) : "新建用例";
+    $("case-form-status").textContent = "";
+    $("go-run").hidden = true;
+    $("case-oracle").value = item ? (item.oracle_yaml || "") :
+      "expected_output:\n  expected_intent_count: 1\nnotes: >\n  在运行前写清楚判断依据及需要人工复核的澄清点。\n";
+    $("case-prompt").value = item ? (item.prompt || "") : (state.type.prompt_template || "");
     var box = $("case-form-fields");
     box.innerHTML = "";
     state.type.form.forEach(function (field) {
@@ -441,6 +1158,9 @@ details summary { cursor: pointer; color: var(--ink-2); }
   }
   $("new-case").addEventListener("click", function () { openCaseForm(null); });
   $("cancel-case").addEventListener("click", function () { $("case-form-card").hidden = true; });
+  $("go-run").addEventListener("click", function () {
+    document.querySelector('[data-panel="run"]').click();
+  });
   $("save-case").addEventListener("click", function () {
     var values = {};
     $("case-form-fields").querySelectorAll("[data-key]").forEach(function (input) {
@@ -450,16 +1170,22 @@ details summary { cursor: pointer; color: var(--ink-2); }
         values[input.dataset.key] = input.value;
       }
     });
+    var oracle = $("case-oracle").value.trim();
+    if (!oracle) { $("case-form-status").textContent = "请填写 Oracle 标准答案"; return; }
+    if (!$("case-prompt").value.trim()) { $("case-form-status").textContent = "请填写任务指令"; return; }
     $("case-form-status").textContent = "保存中…";
     api("/api/test-types/" + state.type.name + "/cases", {
       method: "POST",
       body: JSON.stringify({
         case_id: state.editing ? state.editing.case_id : null,
-        values: values
+        values: values,
+        oracle_yaml: oracle,
+        prompt: $("case-prompt").value
       })
     }).then(function (data) {
-      $("case-form-status").textContent = "已保存 " + data.case.case_id;
-      $("case-form-card").hidden = true;
+      state.selected.add(data.case.case_id);
+      $("case-form-status").textContent = "已保存 " + data.case.case_id + "，已加入 benchmark 并在运行页选中。";
+      $("go-run").hidden = false;
       loadCases();
     }).catch(function (err) { $("case-form-status").textContent = err.message; });
   });
@@ -467,21 +1193,39 @@ details summary { cursor: pointer; color: var(--ink-2); }
   // ------------------------------------------------------------------ runs --
   $("start").addEventListener("click", function () {
     $("run-error").textContent = "";
+    if (!state.selected.size) { $("run-error").textContent = "请先选择至少一个已配置 Oracle 的用例。"; return; }
+    var maxTurns = Number($("run-max-turns").value);
+    if (!Number.isInteger(maxTurns) || maxTurns < 1 || maxTurns > 200) { $("run-error").textContent = "每次运行的最大轮数须为 1–200 的整数。"; return; }
     var body = {
       test_type: state.type.name,
       case_ids: Array.from(state.selected),
       repetitions: parseInt($("repetitions").value || "1", 10),
+      max_turns: maxTurns,
       model: $("model").value || null,
+      candidate_id: state.boundCandidateId,
       baseline: { type: "git", repository: $("b-repo").value, ref: $("b-ref").value },
       candidate: { type: "git", repository: $("c-repo").value, ref: $("c-ref").value }
     };
     $("start").disabled = true;
+    $("run-report").hidden = true;
     $("live-card").hidden = false;
     $("live-table").querySelector("tbody").innerHTML = "";
     $("live-log").innerHTML = "";
+    $("output-card").hidden = true;
+    $("output-split").replaceChildren();
+    state.livePlans.clear();
+    state.liveResults.clear();
+    state.seenRunEvents.clear();
+    if (state.liveSource) { state.liveSource.close(); state.liveSource = null; }
     api("/api/runs", { method: "POST", body: JSON.stringify(body) }).then(function (data) {
       state.runId = data.run_id;
-      $("run-status").textContent = "运行 " + data.run_id;
+      sessionStorage.setItem("cc-eval-active-run", data.run_id);
+      if (data.experiment_id) {
+        $("run-report").href = "#experiment/" + encodeURIComponent(data.experiment_id);
+        $("run-report").hidden = false;
+      }
+      $("run-status").textContent = "运行 " + data.run_id + " · 数据集 " +
+        data.dataset_hash.slice(0, 12) + " · " + data.case_ids.join("、");
       listen(data.run_id);
     }).catch(function (err) {
       $("run-error").textContent = err.message;
@@ -490,26 +1234,50 @@ details summary { cursor: pointer; color: var(--ink-2); }
   });
 
   function listen(runId) {
+    if (state.liveSource) { state.liveSource.close(); }
     var source = new EventSource("/api/runs/" + runId + "/events");
+    state.liveSource = source;
     source.onmessage = function (event) {
       var data = JSON.parse(event.data);
-      log(data);
-      if (data.type === "run_planned") { addLiveRow(data); }
-      if (data.type === "run_finished") {
-        finishLiveRow(data);
-        showOutputs(data);
-      }
-      if (data.type === "experiment_finished" || data.type === "experiment_failed") {
-        source.close();
-        $("start").disabled = false;
-        $("run-status").textContent = data.type === "experiment_failed"
-          ? ("失败：" + data.error) : ("完成：" + data.runs + " 个 run");
-      }
+      handleLiveEvent(data);
     };
     source.onerror = function () {
-      $("run-status").textContent = "连接中断";
-      source.close();
+      if (state.liveSource === source) { $("run-status").textContent = "实时连接中断，正在重连…"; }
     };
+  }
+  function handleLiveEvent(data) {
+    var key = data.type + "|" + (data.run_id || data.experiment_id || "");
+    if (state.seenRunEvents.has(key)) { return; }
+    state.seenRunEvents.add(key);
+    log(data);
+    if (data.type === "run_planned") {
+      state.livePlans.set(data.run_id, data);
+      addLiveRow(data);
+    }
+    if (data.type === "run_started") {
+      var activeRow = document.getElementById("row-" + data.run_id);
+      if (activeRow) {
+        var statusCell = activeRow.querySelectorAll("td")[3];
+        statusCell.replaceChildren(el("span", { class: "pill pill-run", text: "正在运行" }));
+      }
+      $("run-status").textContent = "正在运行 " + data.variant + " · " + data.case_id + " · 第 " + data.repetition + " 次";
+    }
+    if (data.type === "run_finished") {
+      state.liveResults.set(data.run_id, data);
+      finishLiveRow(data);
+      showOutputs();
+      $("run-status").textContent = "已完成 " + state.liveResults.size + " / " + state.livePlans.size + " 个 run；实验仍在运行";
+    }
+    if (data.type === "experiment_finished" || data.type === "experiment_failed") {
+      if (state.liveSource) { state.liveSource.close(); state.liveSource = null; }
+      $("start").disabled = false;
+      $("run-status").textContent = data.type === "experiment_failed"
+        ? ("失败：" + data.error) : ("完成：" + data.runs + " 个 run");
+      if (data.experiment_id) {
+        $("run-report").href = "#experiment/" + encodeURIComponent(data.experiment_id);
+        $("run-report").hidden = false;
+      }
+    }
   }
   function log(data) {
     var line = data.type + " " + (data.run_id || data.run || "") +
@@ -520,11 +1288,13 @@ details summary { cursor: pointer; color: var(--ink-2); }
   }
   function addLiveRow(data) {
     var body = $("live-table").querySelector("tbody");
+    if (document.getElementById("row-" + data.run_id)) { return; }
     var row = el("tr", { id: "row-" + data.run_id }, [
       el("td", {}, [el("code", { text: data.run_id })]),
       el("td", { text: data.variant }),
       el("td", { text: data.case_id }),
-      el("td", {}, [el("span", { class: "pill pill-run", text: "running" })]),
+      el("td", {}, [el("span", { class: "pill pill-run", text: "等待" })]),
+      el("td", { class: "muted", text: "…" }),
       el("td", { class: "muted", text: "…" }),
       el("td", { class: "muted", text: "…" }),
       el("td", { class: "muted", text: "…" })
@@ -540,25 +1310,588 @@ details summary { cursor: pointer; color: var(--ink-2); }
       class: "pill " + (data.status === "success" ? "pill-ok" : "pill-err"),
       text: data.status
     }));
-    cells[4].textContent = data.duration_ms === null ? "n/a" : (data.duration_ms + " ms");
-    cells[5].textContent = data.usage && data.usage.total_tokens !== null && data.usage.total_tokens !== undefined
+    var evaluation = data.evaluation || {};
+    var metrics = evaluation.metrics || {};
+    var score = metrics.rubric_score;
+    cells[4].textContent = score === null || score === undefined ? "n/a" : (score * 100).toFixed(0) + "%";
+    cells[4].title = "当前 rubric 的自动评分；澄清质量尚未纳入此分数";
+    cells[5].textContent = data.duration_ms === null ? "n/a" : (data.duration_ms + " ms");
+    cells[6].textContent = data.usage && data.usage.total_tokens !== null && data.usage.total_tokens !== undefined
       ? data.usage.total_tokens : "n/a";
-    cells[6].textContent = Object.keys(data.outputs || {}).length + " 个文件";
+    cells[7].textContent = Object.keys(data.outputs || {}).length + " 个文件";
   }
-  function showOutputs(data) {
-    var outputs = data.outputs || {};
-    var keys = Object.keys(outputs);
-    if (!keys.length) { return; }
+  function showOutputs() {
+    if (!state.liveResults.size) { return; }
     $("output-card").hidden = false;
-    var split = $("output-split");
-    split.innerHTML = "";
-    keys.forEach(function (key) {
-      var side = el("div", {}, [
-        el("h3", { text: key }),
-        el("pre", { text: outputs[key] })
-      ]);
-      split.appendChild(side);
+    renderLiveCases($("output-split"), Array.from(state.liveResults.values()),
+      Array.from(state.livePlans.values()), Array.from(state.selected), {});
+  }
+  function restoreActiveRun() {
+    api("/api/runs").then(function (data) {
+      var handles = data.runs || [];
+      var saved = sessionStorage.getItem("cc-eval-active-run");
+      var savedHandle = handles.find(function (item) { return item.id === saved; });
+      var runningHandle = handles.filter(function (item) { return item.status === "running"; }).slice(-1)[0];
+      var handle = savedHandle && savedHandle.status === "running" ? savedHandle : runningHandle || savedHandle;
+      if (!handle) { sessionStorage.removeItem("cc-eval-active-run"); return; }
+      return api("/api/runs/" + encodeURIComponent(handle.id)).then(function (snapshot) {
+        state.runId = handle.id;
+        sessionStorage.setItem("cc-eval-active-run", handle.id);
+        if (handle.experiment_id) {
+          $("run-report").href = "#experiment/" + encodeURIComponent(handle.experiment_id);
+          $("run-report").hidden = false;
+        }
+        state.livePlans.clear(); state.liveResults.clear(); state.seenRunEvents.clear();
+        $("live-table").querySelector("tbody").replaceChildren();
+        $("live-log").replaceChildren();
+        $("output-split").replaceChildren();
+        $("live-card").hidden = false;
+        $("output-card").hidden = true;
+        (snapshot.events || []).forEach(handleLiveEvent);
+        if (snapshot.status === "running") {
+          $("start").disabled = true;
+          $("run-status").textContent = "已恢复运行 " + handle.id + " · 已完成 " + state.liveResults.size + " / " + state.livePlans.size + " 个 run";
+          listen(handle.id);
+        } else {
+          $("start").disabled = !state.canWrite;
+        }
+      });
+    }).catch(function () { /* The run panel can still start a new experiment. */ });
+  }
+
+  // ------------------------------------------------------- experiment view --
+  function value(v) { return v === null || v === undefined || v === "" ? "—" : String(v); }
+  function number(v) { return typeof v === "number" ? v.toFixed(3) : value(v); }
+  function metricLabel(key) {
+    return ({ rubric_score: "文档评分", recall: "召回率", precision: "准确率", f1: "F1", cost_usd: "费用", duration_sec: "耗时", total_tokens: "Token 数" })[key] || value(key);
+  }
+  function verdictText(decision) {
+    var labels = { improved: "候选版在本次评估中更好", regressed: "候选版在本次评估中退步", invalid: "本次实验不能用于判断改动效果", inconclusive: "本次结果还不能判定哪版更好", pending: "等待实验结论" };
+    var reasons = {
+      "reason.capability_blocked": "运行轨迹没有证实被测技能实际被调用，因此分数差异不能归因于这次技能改动。",
+      "reason.confounded": "两侧存在其他关键差异，无法把结果归因于候选版改动。",
+      "reason.metric_missing": "主要评分指标没有生成。",
+      "reason.delta_missing": "至少一侧缺少主要评分结果。",
+      "reason.too_few_repetitions": "实际重复运行次数不足，未达到预设要求。",
+      "reason.below_min_delta": "两版评分差距未达到预设的最小改善幅度。",
+      "reason.too_many_regressions": "虽然总分可能提高，但有过多用例退步。",
+      "reason.guard_regression": "虽然主要评分可能提高，但有用例在保护指标上退步。",
+      "reason.guard_metric": "虽然主要评分可能提高，但另一项保护指标退步。",
+      "reason.ci_includes_zero": "观察到了分数变化，但重复运行的波动仍不足以支持明确结论。",
+      "reason.no_change": "主要评分没有变化。"
+    };
+    var defaults = { improved: "主要评分提高，且通过了预设的有效性和退步检查。", regressed: "主要评分下降。", invalid: "实验的有效性检查未通过。", inconclusive: "评分变化尚未满足预设判定条件。" };
+    return { title: labels[decision.verdict] || "实验结论待确认", reason: reasons[decision.reason_code] || defaults[decision.verdict] || "请查看下方运行结果。" };
+  }
+  function codeBlock(label, content) {
+    return el("div", { class: "field" }, [el("h3", { text: label }), el("pre", { text: content })]);
+  }
+  function readableData(data) {
+    if (data === null || data === undefined || data === "") { return document.createTextNode("—"); }
+    if (Array.isArray(data)) {
+      if (!data.length) { return document.createTextNode("—"); }
+      var list = el("ul");
+      data.forEach(function (item) { list.appendChild(el("li", {}, [readableData(item)])); });
+      return list;
+    }
+    if (typeof data === "object") {
+      var rows = el("dl", { class: "meta-list" });
+      Object.keys(data).forEach(function (key) {
+        rows.appendChild(el("dt", { text: key }));
+        rows.appendChild(el("dd", {}, [readableData(data[key])]));
+      });
+      return rows;
+    }
+    return document.createTextNode(String(data));
+  }
+  function dataBlock(label, data) { return el("div", { class: "field" }, [el("h3", { text: label }), readableData(data)]); }
+
+  function intentFiles(run) {
+    return Object.keys((run || {}).output_files || {}).filter(function (path) { return /(^|\/)INTENT\.md$/i.test(path); }).sort();
+  }
+  function markdownSections(markdown) {
+    if (!String(markdown || "").trim()) { return []; }
+    var lines = String(markdown || "").replace(/\r\n?/g, "\n").split("\n");
+    var sections = [], stack = [], seen = {}, current = null, index = 0;
+    function begin(key, title) {
+      var count = (seen[key] || 0) + 1;
+      seen[key] = count;
+      current = { key: key + "#" + count, title: title, lines: [] };
+      sections.push(current);
+    }
+    if (lines[0] === "---") {
+      var end = lines.indexOf("---", 1);
+      if (end > 0) {
+        begin("frontmatter", "文档信息");
+        current.lines = lines.slice(0, end + 1);
+        index = end + 1;
+      }
+    }
+    for (; index < lines.length; index++) {
+      var match = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(lines[index]);
+      if (match) {
+        var depth = match[1].length;
+        stack = stack.slice(0, depth - 1);
+        stack[depth - 1] = match[2].trim();
+        begin(stack.join(" / ").toLowerCase(), stack.join(" / "));
+      } else {
+        if (!current) { begin("preamble", "开头说明"); }
+        current.lines.push(lines[index]);
+      }
+    }
+    return sections.map(function (section) {
+      section.text = section.lines.join("\n").trim();
+      delete section.lines;
+      return section;
     });
+  }
+  function normalizedText(text) { return String(text || "").split("\n").map(function (line) { return line.replace(/\s+/g, " ").trim(); }).filter(Boolean).join("\n"); }
+  function intentSectionPairs(leftText, rightText) {
+    var left = markdownSections(leftText), right = markdownSections(rightText);
+    var leftByKey = {}, rightByKey = {};
+    left.forEach(function (section) { leftByKey[section.key] = section; });
+    right.forEach(function (section) { rightByKey[section.key] = section; });
+    var keys = left.map(function (section) { return section.key; });
+    right.forEach(function (section) { if (!leftByKey[section.key]) { keys.push(section.key); } });
+    return keys.map(function (key) {
+      var a = leftByKey[key], b = rightByKey[key];
+      return { title: (a || b).title, left: a ? a.text : "", right: b ? b.text : "",
+        status: !a ? "added" : !b ? "removed" : normalizedText(a.text) === normalizedText(b.text) ? "same" : "changed" };
+    });
+  }
+  function lineChanges(left, right) {
+    var a = left.split("\n"), b = right.split("\n"), n = a.length, m = b.length;
+    var leftChanged = Array(n).fill(true), rightChanged = Array(m).fill(true);
+    if (normalizedText(left) === normalizedText(right)) { return [Array(n).fill(false), Array(m).fill(false)]; }
+    if (n * m > 100000) { return [leftChanged, rightChanged]; }
+    var dp = Array.from({ length: n + 1 }, function () { return new Uint16Array(m + 1); });
+    function sameLine(x, y) { return x.replace(/\s+/g, " ").trim() === y.replace(/\s+/g, " ").trim(); }
+    for (var i = n - 1; i >= 0; i--) {
+      for (var j = m - 1; j >= 0; j--) {
+        dp[i][j] = sameLine(a[i], b[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    var x = 0, y = 0;
+    while (x < n && y < m) {
+      if (sameLine(a[x], b[y])) { leftChanged[x++] = false; rightChanged[y++] = false; }
+      else if (dp[x + 1][y] >= dp[x][y + 1]) { x++; }
+      else { y++; }
+    }
+    return [leftChanged, rightChanged];
+  }
+  function intentTextPane(label, text, changed, side) {
+    var pane = el("div", { class: "compare-side" }, [el("h3", { text: label })]);
+    var preview = el("pre");
+    if (!text) { preview.textContent = "（这一侧没有此章节）"; }
+    else {
+      text.split("\n").forEach(function (line, index) {
+        preview.appendChild(el("span", { class: "intent-line" + (changed[index] ? " " + side : ""), text: line || " " }));
+      });
+    }
+    pane.appendChild(preview);
+    return pane;
+  }
+  function intentDocumentComparison(caseItem, spec) {
+    var runs = caseItem.runs || [];
+    var baseline = runs.filter(function (run) { return run.variant === (spec.baseline || {}).name && intentFiles(run).length; });
+    var candidate = runs.filter(function (run) { return run.variant === (spec.candidate || {}).name && intentFiles(run).length; });
+    if (!baseline.length && !candidate.length) { return null; }
+    var box = el("div", { class: "intent-compare" });
+    box.appendChild(el("h3", { text: "INTENT.md 产出对照" }));
+    box.appendChild(el("p", { class: "small muted", text: "默认显示两份完整原文。切换到章节差异可定位文字变化；差异不代表语义或质量判断。" }));
+    var toolbar = el("div", { class: "intent-toolbar" });
+    var pickers = [];
+    [baseline, candidate].forEach(function (sideRuns, side) {
+      var field = el("div", { class: "field" });
+      field.appendChild(el("label", { text: side ? "Candidate 文档" : "Baseline 文档" }));
+      var select = el("select");
+      sideRuns.forEach(function (run, runIndex) {
+        intentFiles(run).forEach(function (path) { select.appendChild(el("option", { value: runIndex + "|" + path, text: "第 " + run.repetition + " 次 · " + path })); });
+      });
+      if (!sideRuns.length) { select.appendChild(el("option", { text: "没有 INTENT.md" })); select.disabled = true; }
+      field.appendChild(select); toolbar.appendChild(field);
+      pickers.push({ runs: sideRuns, select: select });
+    });
+    box.appendChild(toolbar);
+    var rawButton = el("button", { type: "button", "aria-pressed": "true", text: "完整原文" });
+    var diffButton = el("button", { type: "button", "aria-pressed": "false", text: "章节差异" });
+    box.appendChild(el("div", { class: "intent-view-switch" }, [rawButton, diffButton]));
+    var rawView = el("div", { class: "compare-grid intent-raw-view" });
+    var rawPanes = ["Baseline · 原始 INTENT.md", "Candidate · 原始 INTENT.md"].map(function (label) {
+      var path = el("p", { class: "small muted" });
+      var original = el("pre");
+      rawView.appendChild(el("div", { class: "compare-side" }, [el("h3", { text: label }), path, original]));
+      return { path: path, original: original };
+    });
+    var diffView = el("div", { class: "intent-diff-view" });
+    diffView.hidden = true;
+    var showSame = el("input", { type: "checkbox", id: "show-same-" + caseItem.case_id });
+    diffView.appendChild(el("label", { class: "row small" }, [showSame, document.createTextNode("显示文字一致的章节")]));
+    var count = el("p", { class: "small muted" });
+    var variationNote = el("p", { class: "small muted" });
+    var content = el("div");
+    diffView.appendChild(count); diffView.appendChild(content);
+    box.appendChild(variationNote); box.appendChild(rawView); box.appendChild(diffView);
+    function showView(mode) {
+      rawView.hidden = mode !== "raw";
+      diffView.hidden = mode !== "diff";
+      rawButton.setAttribute("aria-pressed", mode === "raw" ? "true" : "false");
+      diffButton.setAttribute("aria-pressed", mode === "diff" ? "true" : "false");
+    }
+    rawButton.addEventListener("click", function () { showView("raw"); });
+    diffButton.addEventListener("click", function () { showView("diff"); });
+    function selectedPath(picker) { return picker.select.value.split("|").slice(1).join("|"); }
+    function chosen(picker) {
+      var parts = picker.select.value.split("|");
+      var run = picker.runs[Number(parts[0])];
+      return run ? (run.output_files || {})[selectedPath(picker)] || "" : "";
+    }
+    function variesWithinSide(picker) {
+      var path = selectedPath(picker);
+      var texts = picker.runs.map(function (run) { return (run.output_files || {})[path]; }).filter(function (text) { return text !== undefined; });
+      return new Set(texts.map(normalizedText)).size > 1;
+    }
+    function update() {
+      content.replaceChildren();
+      var left = chosen(pickers[0]), right = chosen(pickers[1]);
+      [left, right].forEach(function (original, index) {
+        rawPanes[index].path.textContent = pickers[index].runs.length ? selectedPath(pickers[index]) : "没有 INTENT.md";
+        rawPanes[index].original.textContent = original || "（没有收集到 INTENT.md 原文）";
+      });
+      var pairs = intentSectionPairs(left, right);
+      var counts = { changed: 0, added: 0, removed: 0, same: 0 };
+      pairs.forEach(function (pair) { counts[pair.status]++; });
+      count.textContent = "文字有变化 " + counts.changed + " · 仅候选版 " + counts.added + " · 仅基线版 " + counts.removed + " · 文字一致 " + counts.same;
+      var varying = [];
+      if (variesWithinSide(pickers[0])) { varying.push("Baseline"); }
+      if (variesWithinSide(pickers[1])) { varying.push("Candidate"); }
+      variationNote.textContent = varying.length ? varying.join("、") + " 的重复运行产出文字也有变化；这里仅比较所选两次，差异不能直接归因于版本改动。" : "";
+      variationNote.hidden = !varying.length;
+      var opened = false;
+      pairs.forEach(function (pair) {
+        if (pair.status === "same" && !showSame.checked) { return; }
+        var labels = { changed: "文字有变化", added: "仅候选版", removed: "仅基线版", same: "文字一致" };
+        var detail = el("details", { class: "intent-section" }, [el("summary", { text: pair.title + " · " + labels[pair.status] })]);
+        if (!opened && pair.status !== "same" && pair.title !== "文档信息") { detail.open = true; opened = true; }
+        var flags = lineChanges(pair.left, pair.right);
+        detail.appendChild(el("div", { class: "compare-grid" }, [
+          intentTextPane("Baseline", pair.left, flags[0], "removed"),
+          intentTextPane("Candidate", pair.right, flags[1], "added")
+        ]));
+        content.appendChild(detail);
+      });
+      if (!content.childNodes.length) { content.appendChild(el("p", { class: "muted", text: "当前显示范围内没有文字变化。" })); }
+    }
+    pickers.forEach(function (picker) { picker.select.addEventListener("change", update); });
+    showSame.addEventListener("change", update);
+    update();
+    return box;
+  }
+  function liveRunSide(label, runs, plannedCount) {
+    var side = el("div", { class: "compare-side" }, [el("h3", { text: label })]);
+    if (!runs.length) {
+      side.appendChild(el("p", { class: "small muted", text: plannedCount ? "结果尚未返回" : "没有安排运行" }));
+      return side;
+    }
+    runs.slice().sort(function (a, b) { return a.repetition - b.repetition; }).forEach(function (run, index) {
+      var section = index ? el("details", {}, [el("summary", { text: "第 " + run.repetition + " 次产出" })]) : el("div");
+      section.appendChild(el("p", { class: "small muted", text: "第 " + run.repetition + " 次 · " + (run.status === "success" ? "已完成" : "运行失败") }));
+      if (run.error) { section.appendChild(el("p", { class: "error", text: run.error })); }
+      var outputs = run.outputs || {};
+      var files = Object.keys(outputs).sort(function (a, b) {
+        return Number(/(^|\/)INTENT\.md$/i.test(b)) - Number(/(^|\/)INTENT\.md$/i.test(a));
+      });
+      if (!files.length) { section.appendChild(el("p", { class: "small muted", text: "没有收集到产出文件" })); }
+      files.forEach(function (path, fileIndex) {
+        if (fileIndex === 0) { section.appendChild(codeBlock(path, outputs[path])); }
+        else {
+          var extra = el("details", {}, [el("summary", { text: path })]);
+          extra.appendChild(codeBlock(path, outputs[path]));
+          section.appendChild(extra);
+        }
+      });
+      side.appendChild(section);
+    });
+    return side;
+  }
+  function renderLiveCases(root, results, plans, caseIds, titles) {
+    root.replaceChildren();
+    var ids = [];
+    (caseIds || []).concat((plans || []).map(function (run) { return run.case_id; }),
+      (results || []).map(function (run) { return run.case_id; })).forEach(function (id) {
+      if (id && !ids.includes(id)) { ids.push(id); }
+    });
+    if (!ids.length) { root.appendChild(el("p", { class: "small muted", text: "等待第一个 run 的结果…" })); return; }
+    ids.forEach(function (caseId) {
+      var runs = (results || []).filter(function (run) { return run.case_id === caseId; });
+      var scheduled = (plans || []).filter(function (run) { return run.case_id === caseId; });
+      var baseline = runs.filter(function (run) { return run.variant === "baseline"; });
+      var candidate = runs.filter(function (run) { return run.variant === "candidate"; });
+      var block = el("div", { class: "detail-case" });
+      block.appendChild(el("h3", { text: caseId + (titles && titles[caseId] ? " · " + titles[caseId] : "") }));
+      block.appendChild(el("p", { class: "small muted", text: "已完成 " + runs.length + " / " + scheduled.length + " 个 run · Baseline " + baseline.length + " · Candidate " + candidate.length }));
+      var documents = intentDocumentComparison({ case_id: caseId, runs: runs.map(function (run) {
+        return { variant: run.variant, repetition: run.repetition, output_files: run.outputs || {} };
+      }) }, { baseline: { name: "baseline" }, candidate: { name: "candidate" } });
+      if (documents && baseline.some(function (run) { return intentFiles({ output_files: run.outputs }).length; }) &&
+          candidate.some(function (run) { return intentFiles({ output_files: run.outputs }).length; })) {
+        block.appendChild(documents);
+      } else {
+        var sides = el("div", { class: "compare-grid" });
+        sides.appendChild(liveRunSide("Baseline · 基线", baseline, scheduled.filter(function (run) { return run.variant === "baseline"; }).length));
+        sides.appendChild(liveRunSide("Candidate · 候选", candidate, scheduled.filter(function (run) { return run.variant === "candidate"; }).length));
+        block.appendChild(sides);
+      }
+      root.appendChild(block);
+    });
+  }
+  function routeFromHash() {
+    var match = /^#experiment\/([A-Za-z0-9._-]+)$/.exec(location.hash);
+    if (!match || $("app").hidden) { return; }
+    var id = decodeURIComponent(match[1]);
+    if (state.detailTimer) { clearInterval(state.detailTimer); state.detailTimer = null; }
+    state.detailRenderKey = "";
+    navigate("detail");
+    $("detail-title").textContent = id;
+    $("detail-subtitle").textContent = "加载中…";
+    $("detail-error").textContent = "";
+    ["detail-summary", "detail-framework", "detail-metrics", "detail-cases", "detail-provenance"].forEach(function (name) { $(name).replaceChildren(); });
+    $("detail-framework").hidden = true;
+    refreshExperimentDetail(id);
+    state.detailTimer = setInterval(function () {
+      if (location.hash !== "#experiment/" + encodeURIComponent(id)) {
+        clearInterval(state.detailTimer); state.detailTimer = null;
+      } else if (!document.hidden) { refreshExperimentDetail(id); }
+    }, 3000);
+  }
+  function refreshExperimentDetail(id) {
+    api("/api/experiments/" + encodeURIComponent(id)).then(function (data) {
+      if (location.hash !== "#experiment/" + encodeURIComponent(id)) { return; }
+      if (data.report || (data.experiment || {}).status !== "running") {
+        if (state.detailTimer) { clearInterval(state.detailTimer); state.detailTimer = null; }
+        var finalKey = "final|" + (data.experiment || {}).status;
+        if (state.detailRenderKey !== finalKey) { state.detailRenderKey = finalKey; renderExperiment(data); }
+        return;
+      }
+      api("/api/runs").then(function (runs) {
+        var handle = (runs.runs || []).find(function (item) { return item.experiment_id === id || item.id.endsWith("-" + id); });
+        return handle ? api("/api/runs/" + encodeURIComponent(handle.id)) : null;
+      }).then(function (live) {
+        if (location.hash !== "#experiment/" + encodeURIComponent(id)) { return; }
+        var finished = ((live || {}).results || []).map(function (run) { return run.run_id; }).join("|");
+        var key = "running|" + ((live || {}).status || "none") + "|" + (((live || {}).events || []).length) + "|" + finished;
+        if (state.detailRenderKey !== key) { state.detailRenderKey = key; renderExperiment(data, live); }
+      }).catch(function (err) { $("detail-error").textContent = "实时结果暂时不可用：" + err.message; });
+    }).catch(function (err) { $("detail-error").textContent = "加载实验失败：" + err.message; });
+  }
+  window.addEventListener("hashchange", routeFromHash);
+
+  function comparedRun(run, primaryMetric) {
+    var section = el("div", { class: "compare-run" });
+    section.appendChild(el("p", { class: "small muted", text: "第 " + run.repetition + " 次 · " + (run.status === "success" ? "运行成功" : "运行失败") + " · " + metricLabel(primaryMetric) + " " + number((run.metrics || {})[primaryMetric]) }));
+    (run.capabilities || []).forEach(function (capability) {
+      var labels = { verified: "已调用", not_invoked: "未调用", contradicted: "未找到", unverified: "无法核实" };
+      section.appendChild(el("p", { class: "small", text: "技能 " + capability.name + "：" + (labels[capability.status] || capability.status) }));
+    });
+    if (run.error) { section.appendChild(el("p", { class: "error", text: run.error })); }
+    var files = Object.keys(run.output_files || {});
+    if (files.length) {
+      var otherFiles = el("details", {}, [el("summary", { text: "查看全部产出文件（" + files.length + "）" })]);
+      files.forEach(function (path) { otherFiles.appendChild(codeBlock(path, run.output_files[path])); });
+      section.appendChild(otherFiles);
+    }
+    if (run.output_text) {
+      var finalReply = el("details", {}, [el("summary", { text: "查看 Agent 最终回复" })]);
+      finalReply.appendChild(codeBlock("最终回复", run.output_text));
+      section.appendChild(finalReply);
+    } else if (!files.length) {
+      section.appendChild(el("p", { class: "small muted", text: "没有收集到产出。" }));
+    }
+    var evidence = el("details", {}, [el("summary", { text: "查看本次评分与运行轨迹" })]);
+    evidence.appendChild(dataBlock("评分明细", run.metrics || {}));
+    if ((run.matched || []).length || (run.unmatched_golden || []).length || (run.unmatched_predictions || []).length || Object.keys(run.evaluation_details || {}).length) {
+      evidence.appendChild(dataBlock("评分依据", { matched: run.matched, unmatched_golden: run.unmatched_golden, unmatched_predictions: run.unmatched_predictions, details: run.evaluation_details }));
+    }
+    if ((run.evaluation_errors || []).length) { evidence.appendChild(codeBlock("评估错误", run.evaluation_errors.join("\n"))); }
+    if ((run.trace_events || []).length) {
+      var timeline = el("ol", { class: "small" });
+      run.trace_events.forEach(function (event) {
+        var details = event.details || {};
+        var label = event.type === "tool_call" ? "调用工具 " + (event.tool || event.name || "") : event.type === "agent_output" ? "Agent：" + (details.text || "") : event.type === "tool_result" ? "工具返回 · " + (event.status || "") : event.type + (event.name ? " · " + event.name : "");
+        if (event.error) { label += " · " + event.error; }
+        timeline.appendChild(el("li", { text: label }));
+      });
+      evidence.appendChild(el("div", { class: "field" }, [el("h3", { text: "运行轨迹" }), timeline]));
+    }
+    section.appendChild(evidence);
+    return section;
+  }
+
+  function comparedSide(label, runs, primaryMetric) {
+    var side = el("div", { class: "compare-side" });
+    side.appendChild(el("h3", { text: label }));
+    if (!runs.length) { side.appendChild(el("p", { class: "muted", text: "没有运行记录" })); return side; }
+    runs.forEach(function (run, index) {
+      if (index === 0) { side.appendChild(comparedRun(run, primaryMetric)); }
+      else {
+        var extra = el("details", {}, [el("summary", { text: "第 " + run.repetition + " 次运行" })]);
+        extra.appendChild(comparedRun(run, primaryMetric));
+        side.appendChild(extra);
+      }
+    });
+    return side;
+  }
+
+  function renderExperiment(data, live) {
+    ["detail-summary", "detail-framework", "detail-metrics", "detail-cases", "detail-provenance"].forEach(function (name) { $(name).replaceChildren(); });
+    $("detail-framework").hidden = true;
+    $("detail-error").textContent = "";
+    var model = data.report || {};
+    var meta = model.metadata || {};
+    var report = model.report || {};
+    var spec = model.experiment || {};
+    var decision = report.decision || {};
+    var snapshot = data.snapshot || null;
+    var entry = data.experiment || {};
+    if (!data.report) {
+      $("detail-title").textContent = entry.title || entry.experiment_id || "实验详情";
+      $("detail-subtitle").textContent = value(entry.experiment_id) + " · " + value(entry.status);
+      $("detail-export").hidden = true;
+      var events = (live || {}).events || [];
+      var planned = events.filter(function (event) { return event.type === "run_planned"; });
+      var results = (live || {}).results || [];
+      var completedIds = new Set(results.map(function (run) { return run.run_id; }));
+      var activeRuns = events.filter(function (event) { return event.type === "run_started" && !completedIds.has(event.run_id); });
+      var active = activeRuns[activeRuns.length - 1];
+      $("detail-summary").appendChild(el("p", { text: entry.status === "running"
+        ? (live && live.status === "finished" ? "所有 run 已结束，正在生成最终报告。" : "实验正在运行，已完成 " + results.length + " / " + planned.length + " 个 run" +
+          (active ? "；当前：" + active.variant + " · " + active.case_id + " · 第 " + active.repetition + " 次" : "") + "；本页自动更新。")
+        : "实验未生成报告：" + value(entry.error) }));
+      if (entry.status === "running") {
+        var titles = {};
+        (snapshot && snapshot.cases || []).forEach(function (item) { titles[item.bundle.case_id] = item.bundle.title || ""; });
+        var cases = $("detail-cases");
+        cases.appendChild(el("h2", { text: "当前产出对照" }));
+        cases.appendChild(el("p", { class: "small muted", text: "每个 run 完成后立即显示已收集到的文件；尚未返回的一侧保留空位。最终评分与结论会在实验结束后出现。" }));
+        var liveCases = el("div");
+        cases.appendChild(liveCases);
+        renderLiveCases(liveCases, results, planned, snapshot && snapshot.case_ids || [], titles);
+      }
+      if (snapshot) { $("detail-provenance").appendChild(dataBlock("当次数据集", { benchmark: snapshot.benchmark, version: snapshot.version, cases: (snapshot.case_ids || []).join("、") })); }
+      return;
+    }
+    $("detail-title").textContent = spec.title || meta.experiment_id || "实验详情";
+    $("detail-subtitle").textContent = value(meta.experiment_id) + " · " + value(meta.generated_at) + " · " + value(meta.status);
+    $("detail-export").href = "/reports/" + encodeURIComponent(meta.experiment_id) + "/report.html";
+    $("detail-export").hidden = !(entry.reports || {}).html;
+    var summary = $("detail-summary");
+    var explanation = verdictText(decision);
+    var verdict = el("div", { class: "detail-verdict", "data-verdict": decision.verdict || "pending" }, [
+      el("h2", { text: explanation.title }), el("p", { text: explanation.reason })
+    ]);
+    summary.appendChild(verdict);
+    if (decision.baseline_value !== null && decision.baseline_value !== undefined && decision.candidate_value !== null && decision.candidate_value !== undefined) {
+      summary.appendChild(el("p", { class: "small muted", text: metricLabel(decision.primary_metric || meta.primary_metric) + "：基线 " + number(decision.baseline_value) + " → 候选 " + number(decision.candidate_value) + "。这是观察值；是否能归因于改动，以实验结论为准。" }));
+    }
+    if ((spec.controls || {}).evaluator === "rubric:intent-doc-v1") {
+      summary.appendChild(el("p", { class: "small muted", text: "当前文档评分不评价 Agent 是否正确提问或等待回答。请直接对照下方两侧的运行过程与产出。" }));
+    }
+    var rawConclusion = el("details", {}, [el("summary", { text: "查看原始判定依据与注意事项" })]);
+    rawConclusion.appendChild(codeBlock("原始判定理由", value(decision.reason)));
+    if ((report.confounds || []).length) { rawConclusion.appendChild(dataBlock("混杂因素", report.confounds)); }
+    if ((meta.warnings || []).length) { rawConclusion.appendChild(codeBlock("注意事项", meta.warnings.join("\n"))); }
+    summary.appendChild(rawConclusion);
+
+    if (snapshot && snapshot.candidate) {
+      var framework = $("detail-framework");
+      framework.hidden = false;
+      framework.appendChild(el("h2", { text: "候选版本的文件变更" }));
+      framework.appendChild(el("p", { class: "small muted", text: "以下是本次实验绑定的 baseline commit 与 candidate commit 之间实际变化的所有文件。选择文件可查看逐行差异。" }));
+      renderCandidateDiff(snapshot.candidate.diff || "", framework);
+    }
+
+    var metrics = $("detail-metrics");
+    var metricDetails = el("details", {}, [el("summary", { text: "查看完整指标对比" })]);
+    var metricBody = el("tbody");
+    (report.metrics || []).forEach(function (item) {
+      metricBody.appendChild(el("tr", {}, [
+        el("td", { text: metricLabel(item.metric) }), el("td", { text: number(item.baseline) }),
+        el("td", { text: number(item.candidate) }), el("td", { text: number(item.delta) }),
+        el("td", { text: item.direction === "higher_is_better" ? "越高越好" : item.direction === "lower_is_better" ? "越低越好" : "—" })
+      ]));
+    });
+    metricDetails.appendChild(el("div", { class: "detail-table-wrap" }, [el("table", {}, [
+      el("thead", {}, [el("tr", {}, ["指标", "基线", "候选", "差值", "方向"].map(function (label) { return el("th", { text: label }); }))]), metricBody
+    ])]));
+    metrics.appendChild(metricDetails);
+
+    var cases = $("detail-cases");
+    cases.appendChild(el("h2", { text: "逐用例对照" }));
+    cases.appendChild(el("p", { class: "small muted", text: "左侧是 baseline，右侧是 candidate。直接对照两侧产出；运行轨迹和评分依据可按需展开。" }));
+    var frozen = {};
+    (snapshot && snapshot.cases || []).forEach(function (item) { frozen[item.bundle.case_id] = item; });
+    (model.cases || []).forEach(function (item) {
+      var block = el("div", { class: "detail-case" });
+      var caseStatus = { improved: "自动评分提高", regressed: "自动评分下降", unchanged: "自动评分持平", unknown: "评分不完整" };
+      block.appendChild(el("h3", { text: item.case_id + " · " + (item.title || "") }));
+      var documentComparison = intentDocumentComparison(item, spec);
+      if (!documentComparison) {
+        block.appendChild(el("p", { class: "small muted", text: (caseStatus[item.status] || "评分待确认") + " · baseline " + number(item.baseline_score) + " / candidate " + number(item.candidate_score) }));
+      }
+      if (documentComparison) { block.appendChild(documentComparison); }
+      var compared = el("div", { class: "compare-grid" });
+      var runs = item.runs || [];
+      compared.appendChild(comparedSide("Baseline · 基线", runs.filter(function (run) { return run.variant === (spec.baseline || {}).name; }), decision.primary_metric || meta.primary_metric));
+      compared.appendChild(comparedSide("Candidate · 候选", runs.filter(function (run) { return run.variant === (spec.candidate || {}).name; }), decision.primary_metric || meta.primary_metric));
+      if (documentComparison) {
+        var runDetails = el("details", {}, [el("summary", { text: "查看运行过程、技能调用与其他产出" })]);
+        runDetails.appendChild(compared);
+        block.appendChild(runDetails);
+      } else { block.appendChild(compared); }
+      if ((item.notes || []).length) {
+        var caseNotes = el("details", {}, [el("summary", { text: "查看用例判定说明" })]);
+        caseNotes.appendChild(codeBlock("说明", item.notes.join("\n")));
+        block.appendChild(caseNotes);
+      }
+      var saved = frozen[item.case_id];
+      if (saved) {
+        var input = el("details", {}, [el("summary", { text: "当次测试输入与 Oracle" })]);
+        input.appendChild(codeBlock("任务指令", saved.bundle.prompt || ""));
+        Object.keys(saved.bundle.input_files || {}).forEach(function (path) { input.appendChild(codeBlock("输入文件 · " + path, saved.bundle.input_files[path])); });
+        input.appendChild(dataBlock("Oracle", saved.oracle));
+        block.appendChild(input);
+      }
+      if ((item.trace_diff || []).length) {
+        var traceDiff = el("details", {}, [el("summary", { text: "查看两侧运行路径差异" })]);
+        (item.trace_diff || []).forEach(function (diff) {
+          traceDiff.appendChild(dataBlock("第 " + diff.repetition + " 次", {
+            "仅基线出现的步骤": (diff.only_in_baseline || []).join("、") || "无",
+            "仅候选出现的步骤": (diff.only_in_candidate || []).join("、") || "无",
+            "步骤完全一致": diff.identical ? "是" : "否"
+          }));
+        });
+        block.appendChild(traceDiff);
+      }
+      cases.appendChild(block);
+    });
+
+    var provenance = $("detail-provenance");
+    var provenanceDetails = el("details", {}, [el("summary", { text: "查看实验配置与来源" })]);
+    provenanceDetails.appendChild(dataBlock("版本与数据集", {
+      "基线版本": (spec.baseline || {}).framework || {},
+      "候选版本": (spec.candidate || {}).framework || {},
+      "候选版本 ID": entry.candidate_id || "—",
+      "数据集": meta.dataset_name,
+      "数据集版本": meta.dataset_version,
+      "数据集哈希": meta.dataset_hash,
+      "评估器": (spec.controls || {}).evaluator || meta.evaluator,
+      "模型": meta.model,
+      "重复次数": meta.repetitions,
+      "每次运行最多 Agent 轮数": (spec.controls || {}).max_turns || 40
+    }));
+    if (!snapshot) { provenanceDetails.appendChild(el("p", { class: "small muted", text: "这是一条旧实验记录：当次用例与 Oracle 快照不可用。报告中的评分和运行结果仍可查看。" })); }
+    provenanceDetails.appendChild(el("a", { href: "/reports/" + encodeURIComponent(meta.experiment_id) + "/report.json", target: "_blank", rel: "noopener", text: "下载原始 JSON 数据" }));
+    provenance.appendChild(provenanceDetails);
   }
 
   // --------------------------------------------------------------- history --
@@ -567,8 +1900,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
       var body = $("history-table").querySelector("tbody");
       body.innerHTML = "";
       (data.experiments || []).forEach(function (item) {
-        var report = (item.reports || {}).html || "";
-        var link = el("a", { href: report ? "/reports/" + item.experiment_id + "/report.html" : "#", text: "打开" });
+        var link = el("a", { href: "#experiment/" + encodeURIComponent(item.experiment_id), text: "查看详情" });
         body.appendChild(el("tr", {}, [
           el("td", {}, [el("code", { text: item.experiment_id })]),
           el("td", { text: item.title || "" }),
@@ -598,7 +1930,7 @@ details summary { cursor: pointer; color: var(--ink-2); }
 
   // ------------------------------------------------------------------ boot --
   api("/api/session").then(function (data) {
-    if (data.authenticated) { showApp(data.role, data.public_url); bootstrap(); } else { showLogin(); }
+    if (data.authenticated) { showApp(data.role, data.public_url, data.can_write); bootstrap(); routeFromHash(); restoreActiveRun(); if (!location.hash && sessionStorage.getItem("cc-eval-panel") === "candidate") { navigate("candidate"); } } else { showLogin(); }
   }).catch(showLogin);
 })();
 </script>

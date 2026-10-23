@@ -12,7 +12,6 @@ Three properties are checked:
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 from cc_eval.core.config import EvalConfig
@@ -229,9 +228,9 @@ def test_workspace_manager_only_cleans_its_own_workspaces(tmp_path: Path) -> Non
 
 def test_dangerous_permission_mode_is_refused(tmp_path: Path) -> None:
     """Claude Code's bypass mode must not be reachable by accident."""
-    from cc_eval.runners.claude import ClaudeRunner
-    from cc_eval.runners.base import RunConfig
     from cc_eval.core.models import TaskBundle
+    from cc_eval.runners.base import RunConfig
+    from cc_eval.runners.claude import ClaudeRunner
 
     runner = ClaudeRunner()
     config = RunConfig(permission_mode="bypassPermissions")
@@ -243,3 +242,15 @@ def test_dangerous_permission_mode_is_refused(tmp_path: Path) -> None:
         assert "bypassPermissions" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("the dangerous permission mode was accepted")
+
+
+def test_explicit_bypass_opt_in_selects_the_requested_mode(tmp_path: Path) -> None:
+    from cc_eval.core.models import TaskBundle
+    from cc_eval.runners.base import RunConfig
+    from cc_eval.runners.claude import ClaudeRunner
+
+    task = TaskBundle(case_id="C1", task_type="t", prompt="p")
+    command = ClaudeRunner().build_command(
+        task, RunConfig(permission_mode="bypassPermissions", allow_bypass_permissions=True), tmp_path,
+    )
+    assert command[command.index("--permission-mode") + 1] == "bypassPermissions"

@@ -11,9 +11,9 @@ import os
 import shutil
 import subprocess
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # keeps the import graph acyclic at runtime
@@ -81,6 +81,7 @@ def run_command(
     env: dict[str, str] | None = None,
     stdin_text: str | None = None,
     max_output_bytes: int = 8 * 1024 * 1024,
+    on_stdout_line: Callable[[str], None] | None = None,
 ) -> CommandResult:
     """Run ``command`` in ``cwd`` with a timeout, capturing stdout/stderr."""
     cwd = Path(cwd)
@@ -91,18 +92,78 @@ def run_command(
     exit_code: int | None = None
 
     try:
-        proc = subprocess.run(  # noqa: S603 - command is constructed by the runner adapters
-            command,
-            cwd=str(cwd),
-            env=env,
-            input=stdin_text.encode("utf-8") if stdin_text is not None else None,
-            capture_output=True,
-            timeout=timeout_sec,
-            check=False,
-        )
-        exit_code = proc.returncode
-        stdout_bytes = proc.stdout or b""
-        stderr_bytes = proc.stderr or b""
+        if on_stdout_line is None:
+            proc = subprocess.run(  # noqa: S603 - command is constructed by the runner adapters
+                command,
+                cwd=str(cwd),
+                env=env,
+                input=stdin_text.encode("utf-8") if stdin_text is not None else None,
+                capture_output=True,
+                timeout=timeout_sec,
+                check=False,
+            )
+            exit_code = proc.returncode
+            stdout_bytes = proc.stdout or b""
+            stderr_bytes = proc.stderr or b""
+        else:
+            # Candidate editing needs live activity. Drain both pipes while the
+            # process runs so a full stderr pipe cannot stall Claude Code.
+            import threading
+
+            proc = subprocess.Popen(  # noqa: S603 - command is constructed by the runner adapters
+                command, cwd=str(cwd), env=env,
+                stdin=subprocess.PIPE if stdin_text is not None else subprocess.DEVNULL,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
+            out_chunks: list[bytes] = []
+            err_chunks: list[bytes] = []
+
+            def read_stdout() -> None:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    out_chunks.append(line)
+                    try:
+                        on_stdout_line(line.decode("utf-8", errors="replace").rstrip("\r\n"))
+                    except Exception:
+                        pass  # Progress reporting must not interrupt the run.
+                proc.stdout.close()
+
+            def read_stderr() -> None:
+                assert proc.stderr is not None
+                for chunk in iter(lambda: proc.stderr.read(8192), b""):
+                    err_chunks.append(chunk)
+                proc.stderr.close()
+
+            readers = [threading.Thread(target=read_stdout), threading.Thread(target=read_stderr)]
+            for reader in readers:
+                reader.start()
+            def write_stdin() -> None:
+                assert proc.stdin is not None
+                try:
+                    proc.stdin.write(stdin_text.encode("utf-8") if stdin_text is not None else b"")
+                except (BrokenPipeError, OSError):
+                    pass
+                finally:
+                    try:
+                        proc.stdin.close()
+                    except OSError:
+                        pass
+
+            writer = threading.Thread(target=write_stdin) if stdin_text is not None else None
+            if writer is not None:
+                writer.start()
+            try:
+                exit_code = proc.wait(timeout=timeout_sec)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                proc.kill()
+                proc.wait()
+            for reader in readers:
+                reader.join()
+            if writer is not None:
+                writer.join()
+            stdout_bytes = b"".join(out_chunks)
+            stderr_bytes = b"".join(err_chunks)
     except subprocess.TimeoutExpired as exc:
         timed_out = True
         stdout_bytes = exc.stdout or b""
